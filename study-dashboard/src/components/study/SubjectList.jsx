@@ -1,12 +1,7 @@
 import { useState } from 'react'
+import Card from '../ui/Card';
 
-function SubjectList() {
-    const [subjects, setSubjects] = useState([
-        { id: 1, name: 'Matemática' },
-        { id: 2, name: 'Geografia' },
-        { id: 3, name: 'Ciência Política' }
-    ])
-    
+function SubjectList({ subjects, setSubjects }) {
     const [newSubject, setNewSubject] = useState('')
 
     function handleAddSubject() {
@@ -20,26 +15,30 @@ function SubjectList() {
         setSubjects([...subjects, newItem])
         setNewSubject('')
     }
-    
+
+    function handleRemoveSubject(id) {
+        const filtered = subjects.filter((subject) => subject.id !== id)
+        setSubjects(filtered)
+    }
+
     return (
-        <section>
-            <h2>Matérias</h2>
-
-            <div>
-                <input type="text" placeholder="Nova matéria" value={newSubject} onChange={(e) => setNewSubject(e.target.value)} />
-
-                <button onClick={handleAddSubject}>Adicionar</button>
-            </div>
-
+        <Card>
+            <section>
+                <h2>Matérias</h2>
+                <div>
+                    <input type="text" placeholder="Nova matéria" value={newSubject} onChange={(e) => setNewSubject(e.target.value)}/>
+                    <button onClick={handleAddSubject}>Adicionar</button>
+                </div>
             <ul>
-                {subjects.map((subject) => (<li key={subject.id}>{subject.name}</li>))}
+                {subjects.map((subject) => (
+                <li key={subject.id}>{subject.name}
+                    <button onClick={() => handleRemoveSubject(subject.id)}>❌</button>
+                </li>
+                ))}
             </ul>
-        </section>
-  )
+            </section>
+        </Card>
+    )
 }
 
 export default SubjectList
-
-
-// .map() serve para transformar cada item em jsx.
-// key ajusta o React para identificar elementos.

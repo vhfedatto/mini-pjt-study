@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -5,9 +7,10 @@
 }
 
 :root {
-  font-family: Arial, Helvetica, sans-serif;
-  line-height: 1.5;
+  font-family: 'Crimson Pro', serif;
+  line-height: 1.6;
   font-weight: 400;
+
   color: #1f2937;
   background-color: #f3f4f6;
 }
@@ -131,4 +134,12 @@ a {
 .summary-card-description {
   font-size: 0.95rem;
   color: #4b5563;
+}
+
+.custom-card {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  margin-top: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
 }
