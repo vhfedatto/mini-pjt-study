@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Card from '../ui/Card'
+import { useCallback } from 'react'
 
 function SubjectList({ subjects, setSubjects, isLoadingSubjects }) {
   const [newSubject, setNewSubject] = useState('')
@@ -15,29 +16,28 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects }) {
     }
   }, [newSubject])
 
-  function handleAddSubject() {
+  const handleAddSubject = useCallback(() => {
     const trimmedSubject = newSubject.trim()
-
     if (trimmedSubject === '') return
 
-    const subjectAlreadyExists = subjects.some(
-      (subject) => subject.name.toLowerCase() === trimmedSubject.toLowerCase()
+    const exists = subjects.some(
+      (s) => s.name.toLowerCase() === trimmedSubject.toLowerCase()
     )
 
-    if (subjectAlreadyExists) {
-      alert('Essa matéria já foi adicionada.')
+    if (exists){
+      alert('Matéria já existe')
       return
-    }
+    } 
 
-    const newItem = {
-      id: Date.now(),
-      name: trimmedSubject
-    }
+    setSubjects([
+      ...subjects,
+      { id: Date.now(), name: trimmedSubject }
+    ])
 
-    setSubjects([...subjects, newItem])
     setNewSubject('')
     inputRef.current?.focus()
-  }
+  }, [newSubject, subjects, setSubjects])
+  
 
   function handleRemoveSubject(id) {
     const filteredSubjects = subjects.filter((subject) => subject.id !== id)
@@ -57,6 +57,7 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects }) {
             placeholder="Nova matéria"
             value={newSubject}
             onChange={(e) => setNewSubject(e.target.value)}
+            onKeyDown={(e) => {if (e.key === 'Enter') handleAddTask()}}
           />
 
           <button className="subject-add-button" onClick={handleAddSubject}>

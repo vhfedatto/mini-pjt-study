@@ -1,4 +1,4 @@
-import { useReducer, useState } from 'react'
+import { useCallback, useMemo, useReducer, useState } from 'react'
 import { taskReducer } from '../../reducers/taskReducer'
 import Card from '../ui/Card'
 
@@ -6,7 +6,15 @@ function TaskList() {
   const [tasks, dispatch] = useReducer(taskReducer, [])
   const [newTask, setNewTask] = useState('')
 
-  function handleAddTask() {
+  const completedTasks = useMemo(() => {
+    return tasks.filter((task) => task.completed).length
+  }, [tasks])
+
+  const pendingTasks = useMemo(() => {
+    return tasks.filter((task) => !task.completed).length
+  }, [tasks])
+
+  const handleAddTask = useCallback(() => {
     if (newTask.trim() === '') return
 
     dispatch({
@@ -15,11 +23,15 @@ function TaskList() {
     })
 
     setNewTask('')
-  }
+  }, [newTask, dispatch])
 
   return (
     <Card>
       <h2 className="section-title">Tarefas</h2>
+
+      <p style={{ marginBottom: '10px', color: '#64748b' }}>
+        ✅ Concluídas: {completedTasks} | ⏳ Pendentes: {pendingTasks}
+      </p>
 
       <div className="subject-form">
         <input
@@ -27,6 +39,9 @@ function TaskList() {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Nova tarefa"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleAddTask()
+          }}
         />
 
         <button className="subject-add-button" onClick={handleAddTask}>

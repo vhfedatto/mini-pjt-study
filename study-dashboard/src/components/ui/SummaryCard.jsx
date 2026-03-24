@@ -1,4 +1,4 @@
-function SummaryCard({ title, value, description }) {
+function SummaryCard({ title, value={totalSubjects}, description }) {
     return (
         <article className="summary-card">
             <h3 className="summary-card-title">{title}</h3>
