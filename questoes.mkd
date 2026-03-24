@@ -14,4 +14,4 @@
 
 
 6. O que o useEffect faz?
-
+Ele serve para executar efeitos colaterais. Basicamente, quando o componente renderizar, ele executa algo. Busca dados, inicia timer, escuta eventos, salva no localStorage, limpa o timer...

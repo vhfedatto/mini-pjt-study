@@ -8,33 +8,10 @@
 
 :root {
   font-family: 'Crimson Pro', serif;
-  line-height: 1.6;
+  line-height: 1.5;
   font-weight: 400;
-
   color: #1f2937;
   background-color: #f3f4f6;
-}
-
-body {
-  min-height: 100vh;
-  background-color: #f3f4f6;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
 }
 
 .dashboard-layout {
@@ -43,63 +20,66 @@ a {
 }
 
 .sidebar {
-  width: 240px;
-  background-color: #111827;
+  width: 200px;
+  background-color: #0f172a;
   color: #ffffff;
-  padding: 24px;
+  padding: 22px 20px;
 }
 
 .sidebar-title {
-  font-size: 1.5rem;
-  margin-bottom: 32px;
+  font-size: 1.15rem;
+  margin-bottom: 28px;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .sidebar-nav a {
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: 0.2s;
+  font-size: 0.98rem;
 }
 
 .sidebar-nav a:hover {
-  background-color: #1f2937;
+  background-color: #1e293b;
 }
 
 .dashboard-content {
   flex: 1;
-  padding: 32px;
+  padding: 28px;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 26px;
   gap: 16px;
 }
 
 .header-title {
   font-size: 2rem;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .header-subtitle {
   color: #6b7280;
+  font-size: 1rem;
 }
 
 .header-button {
   border: none;
   background-color: #2563eb;
   color: white;
-  padding: 12px 18px;
-  border-radius: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
   cursor: pointer;
   transition: 0.2s;
+  font-size: 0.95rem;
 }
 
 .header-button:hover {
@@ -109,67 +89,63 @@ a {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 16px;
 }
 
 .summary-card {
   background-color: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .summary-card-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #6b7280;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .summary-card-value {
-  font-size: 2rem;
+  font-size: 1.85rem;
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .summary-card-description {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: #4b5563;
 }
 
 .custom-card {
   background: #ffffff;
-  padding: 32px;
-  border-radius: 24px;
-  margin-top: 28px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  padding: 24px;
+  border-radius: 20px;
+  margin-top: 24px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
   border: 1px solid #e5e7eb;
 }
 
-.subject-section {
-  width: 100%;
-}
-
 .section-title {
-  font-size: 2.4rem;
-  margin-bottom: 24px;
+  font-size: 2rem;
+  margin-bottom: 18px;
   color: #1e293b;
 }
 
 .subject-form {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .subject-input {
   flex: 1;
   border: 1px solid #cbd5e1;
   background-color: #f8fafc;
-  border-radius: 14px;
-  padding: 14px 18px;
+  border-radius: 12px;
+  padding: 12px 16px;
   outline: none;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
@@ -183,12 +159,13 @@ a {
   border: none;
   background: #2563eb;
   color: #ffffff;
-  padding: 14px 22px;
-  border-radius: 14px;
+  padding: 12px 18px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
   transition: transform 0.15s, background-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.15);
+  font-size: 0.95rem;
 }
 
 .subject-add-button:hover {
@@ -200,7 +177,7 @@ a {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   padding: 0;
   margin: 0;
 }
@@ -209,27 +186,27 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
-  border-radius: 16px;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
 
 .subject-name {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #1e293b;
 }
 
 .subject-remove-button {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #fee2e2;
   color: #dc2626;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -242,10 +219,4 @@ a {
 .subject-remove-button:hover {
   background: #fecaca;
   transform: scale(1.05);
-}
-
-.empty-message {
-  color: #64748b;
-  font-size: 1.05rem;
-  padding: 12px 4px;
 }

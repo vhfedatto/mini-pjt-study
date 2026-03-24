@@ -1,8 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Card from '../ui/Card'
 
-function SubjectList({ subjects, setSubjects }) {
+function SubjectList({ subjects, setSubjects, isLoadingSubjects }) {
   const [newSubject, setNewSubject] = useState('')
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (newSubject.length > 0) {
+      console.log('O input foi alterado:', newSubject)
+    }
+  }, [newSubject])
 
   function handleAddSubject() {
     const trimmedSubject = newSubject.trim()
@@ -25,6 +36,7 @@ function SubjectList({ subjects, setSubjects }) {
 
     setSubjects([...subjects, newItem])
     setNewSubject('')
+    inputRef.current?.focus()
   }
 
   function handleRemoveSubject(id) {
@@ -39,6 +51,7 @@ function SubjectList({ subjects, setSubjects }) {
 
         <div className="subject-form">
           <input
+            ref={inputRef}
             className="subject-input"
             type="text"
             placeholder="Nova matéria"
@@ -51,7 +64,9 @@ function SubjectList({ subjects, setSubjects }) {
           </button>
         </div>
 
-        {subjects.length > 0 ? (
+        {isLoadingSubjects ? (
+          <p className="empty-message">Carregando matérias...</p>
+        ) : subjects.length > 0 ? (
           <ul className="subject-list">
             {subjects.map((subject) => (
               <li className="subject-item" key={subject.id}>
@@ -60,7 +75,9 @@ function SubjectList({ subjects, setSubjects }) {
                 <button
                   className="subject-remove-button"
                   onClick={() => handleRemoveSubject(subject.id)}
-                >✕</button>
+                >
+                  ✕
+                </button>
               </li>
             ))}
           </ul>
