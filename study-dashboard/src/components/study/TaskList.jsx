@@ -1,9 +1,16 @@
-import { useCallback, useMemo, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import { taskReducer } from '../../reducers/taskReducer'
 import Card from '../ui/Card'
 
 function TaskList() {
-  const [tasks, dispatch] = useReducer(taskReducer, [])
+  const [tasks, dispatch] = useReducer(
+    taskReducer,
+    [],
+    () => {
+      const stored = localStorage.getItem('tasks')
+      return stored ? JSON.parse(stored) : []
+    }
+  )
   const [newTask, setNewTask] = useState('')
 
   const completedTasks = useMemo(() => {
@@ -24,6 +31,10 @@ function TaskList() {
 
     setNewTask('')
   }, [newTask, dispatch])
+
+  useEffect(() => {
+    localStorage.setItem('tasks', JSON.stringify(tasks))
+  }, [tasks])
 
   return (
     <Card>
@@ -52,18 +63,19 @@ function TaskList() {
 
       <ul className="subject-list">
         {tasks.map((task) => (
-          <li className="subject-item" key={task.id}>
-            <span
-              style={{
-                textDecoration: task.completed ? 'line-through' : 'none'
-              }}
-            >
+          <li
+            className={`subject-item task-item ${
+              task.completed ? 'completed' : ''
+            }`}
+            key={task.id}
+          >
+            <span className={`task-text ${task.completed ? 'done' : ''}`}>
               {task.text}
             </span>
 
             <div className="chip-group">
               <button
-                className="subject-remove-button"
+                className="subject-remove-button task-check-button"
                 onClick={() =>
                   dispatch({ type: 'TOGGLE_TASK', payload: task.id })
                 }

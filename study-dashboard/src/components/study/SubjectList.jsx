@@ -70,7 +70,11 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects }) {
         {isLoadingSubjects ? (
           <p className="empty-message">Carregando matérias...</p>
         ) : subjects.length > 0 ? (
-          <ul className="subject-list">
+          <ul
+            className={`subject-list ${
+              subjects.length > 2 ? 'subject-list-grid' : ''
+            }`}
+          >
             {subjects.map((subject) => (
               <li className="subject-item" key={subject.id}>
                 <span className="subject-name">{subject.name}</span>

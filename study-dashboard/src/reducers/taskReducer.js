@@ -14,11 +14,16 @@ export function taskReducer(state, action) {
       return state.filter((task) => task.id !== action.payload)
 
     case 'TOGGLE_TASK':
-      return state.map((task) =>
-        task.id === action.payload
-          ? { ...task, completed: !task.completed }
-          : task
-      )
+      return state
+        .map((task) =>
+          task.id === action.payload
+            ? { ...task, completed: !task.completed }
+            : task
+        )
+        .sort(
+          (a, b) =>
+            Number(a.completed) - Number(b.completed) || a.id - b.id
+        )
 
     default:
       return state

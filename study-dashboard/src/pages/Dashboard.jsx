@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 import SummaryCard from '../components/ui/SummaryCard'
@@ -7,26 +6,22 @@ import SubjectList from '../components/study/SubjectList'
 import TaskList from '../components/study/TaskList'
 
 function Dashboard() {
-	const [subjects, setSubjects] = useState([])
+	const [subjects, setSubjects] = useState(() => {
+		const stored = localStorage.getItem('subjects')
+		return stored ? JSON.parse(stored) : []
+	})
 	const [isLoadingSubjects, setIsLoadingSubjects] = useState(true)
 	const totalSubjects = useMemo(() => {
 		return subjects.length
 	}, [subjects])
 
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setSubjects([
-				{ id: 1, name: 'Back-end' },
-				{ id: 2, name: 'Banco de Dados' },
-				{ id: 3, name: 'Estrutura de Dados' }
-			])
-			setIsLoadingSubjects(false)
-		}, 1200)
-
-		return () => {
-			clearTimeout(timer)
-		}
+		setIsLoadingSubjects(false)
 	}, [])
+
+	useEffect(() => {
+		localStorage.setItem('subjects', JSON.stringify(subjects))
+	}, [subjects])
 
 	return (
 		<main className="dashboard-layout">
@@ -55,12 +50,14 @@ function Dashboard() {
 					/>
 				</section>
 
-				<SubjectList
-					subjects={subjects}
-					setSubjects={setSubjects}
-					isLoadingSubjects={isLoadingSubjects}
-				/>
-				<TaskList />
+        <section className="split-grid">
+          <SubjectList
+            subjects={subjects}
+            setSubjects={setSubjects}
+            isLoadingSubjects={isLoadingSubjects}
+          />
+          <TaskList />
+        </section>
 			</section>
 		</main>
 	)
