@@ -1,25 +1,8 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
-import { taskReducer } from '../../reducers/taskReducer'
+import { useCallback, useState } from 'react'
 import Card from '../ui/Card'
 
-function TaskList() {
-  const [tasks, dispatch] = useReducer(
-    taskReducer,
-    [],
-    () => {
-      const stored = localStorage.getItem('tasks')
-      return stored ? JSON.parse(stored) : []
-    }
-  )
+function TaskList({ tasks, dispatch, pendingTasks, completedTasks }) {
   const [newTask, setNewTask] = useState('')
-
-  const completedTasks = useMemo(() => {
-    return tasks.filter((task) => task.completed).length
-  }, [tasks])
-
-  const pendingTasks = useMemo(() => {
-    return tasks.filter((task) => !task.completed).length
-  }, [tasks])
 
   const handleAddTask = useCallback(() => {
     if (newTask.trim() === '') return
@@ -31,10 +14,6 @@ function TaskList() {
 
     setNewTask('')
   }, [newTask, dispatch])
-
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks))
-  }, [tasks])
 
   return (
     <Card>
