@@ -1,0 +1,17 @@
+1. O que é useState e como usar?
+- State é basicamente dados que podem mudar ao longo do tempo e fazem a tela atualizar. Se não usar, o React não "Reage".
+
+2. Como criar um componente?
+
+
+3. Como passar dados (props)
+
+
+4. Como mostrar lista (map)
+
+
+5. Como fazer condição (if no React)
+
+
+6. O que o useEffect faz?
+
