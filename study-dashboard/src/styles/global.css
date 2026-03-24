@@ -220,3 +220,30 @@
   background: #fecaca;
   transform: scale(1.05);
 }
+
+/*.dark {
+  background-color: #020617;
+  color: #e2e8f0;
+}
+
+.dark .sidebar {
+  background-color: #020617;
+}
+
+.dark .custom-card,
+.dark .summary-card {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-color: #1e293b;
+}
+
+.dark .subject-item {
+  background-color: #020617;
+  border-color: #1e293b;
+}
+
+.dark .subject-input {
+  background-color: #020617;
+  color: #e2e8f0;
+  border-color: #334155;
+}*/

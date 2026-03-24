@@ -3,6 +3,7 @@ import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 import SummaryCard from '../components/ui/SummaryCard'
 import SubjectList from '../components/study/SubjectList'
+import TaskList from '../components/study/TaskList'
 
 function Dashboard() {
   const [subjects, setSubjects] = useState([])
@@ -55,6 +56,7 @@ function Dashboard() {
           setSubjects={setSubjects}
           isLoadingSubjects={isLoadingSubjects}
         />
+        <TaskList />
       </section>
     </main>
   )
