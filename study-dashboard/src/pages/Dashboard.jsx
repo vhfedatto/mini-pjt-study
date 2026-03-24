@@ -1,6 +1,7 @@
 import Sidebar from "../components/layout/Sidebar";
 import Header from '../components/layout/Header';
 import SummaryCard from '../components/ui/SummaryCard';
+import SubjectList from '../components/study/SubjectList'
 
 function Dashboard(){
     return (
@@ -28,6 +29,7 @@ function Dashboard(){
                         value="72%"
                         description="Seu desempenho geral está muito bom"
                     />
+                    <SubjectList />
                 </section>
             </section>
         </main>

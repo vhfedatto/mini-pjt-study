@@ -1,23 +1,40 @@
 import { useState } from 'react'
 
 function SubjectList() {
-    // Estado agora é uma lista.
     const [subjects, setSubjects] = useState([
-        'Direito Constitucional',
-        'Algoritmos',
-        'Banco de Dados'
+        { id: 1, name: 'Matemática' },
+        { id: 2, name: 'Geografia' },
+        { id: 3, name: 'Ciência Política' }
     ])
+    
+    const [newSubject, setNewSubject] = useState('')
 
-  return (
-    <section>
-      <h2>Matérias</h2>
+    function handleAddSubject() {
+        if (newSubject.trim() === '') return
 
-      <ul>
-        {subjects.map((subject, index) => (
-          <li key={index}>{subject}</li>
-        ))}
-      </ul>
-    </section>
+        const newItem = {
+            id: Date.now(),
+            name: newSubject
+        }
+
+        setSubjects([...subjects, newItem])
+        setNewSubject('')
+    }
+    
+    return (
+        <section>
+            <h2>Matérias</h2>
+
+            <div>
+                <input type="text" placeholder="Nova matéria" value={newSubject} onChange={(e) => setNewSubject(e.target.value)} />
+
+                <button onClick={handleAddSubject}>Adicionar</button>
+            </div>
+
+            <ul>
+                {subjects.map((subject) => (<li key={subject.id}>{subject.name}</li>))}
+            </ul>
+        </section>
   )
 }
 
