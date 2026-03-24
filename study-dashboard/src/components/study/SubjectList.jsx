@@ -54,11 +54,13 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects }) {
             ref={inputRef}
             className="subject-input"
             type="text"
-            placeholder="Nova matéria"
-            value={newSubject}
-            onChange={(e) => setNewSubject(e.target.value)}
-            onKeyDown={(e) => {if (e.key === 'Enter') handleAddTask()}}
-          />
+          placeholder="Nova matéria"
+          value={newSubject}
+          onChange={(e) => setNewSubject(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleAddSubject()
+          }}
+        />
 
           <button className="subject-add-button" onClick={handleAddSubject}>
             Adicionar

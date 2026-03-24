@@ -29,9 +29,10 @@ function TaskList() {
     <Card>
       <h2 className="section-title">Tarefas</h2>
 
-      <p style={{ marginBottom: '10px', color: '#64748b' }}>
-        ✅ Concluídas: {completedTasks} | ⏳ Pendentes: {pendingTasks}
-      </p>
+      <div className="task-meta">
+        <span className="pill success">✅ Concluídas: {completedTasks}</span>
+        <span className="pill info">⏳ Pendentes: {pendingTasks}</span>
+      </div>
 
       <div className="subject-form">
         <input
@@ -60,7 +61,7 @@ function TaskList() {
               {task.text}
             </span>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="chip-group">
               <button
                 className="subject-remove-button"
                 onClick={() =>

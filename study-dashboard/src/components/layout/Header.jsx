@@ -1,9 +1,4 @@
-import { useContext } from 'react'
-import { ThemeContext } from '../../context/ThemeContext'
-
 function Header() {
-  const { theme, toggleTheme } = useContext(ThemeContext)
-
   return (
     <header className="header">
       <div>
@@ -13,11 +8,7 @@ function Header() {
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button className="header-button" onClick={toggleTheme}>
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-
+      <div className="header-actions">
         <button className="header-button">Novo Plano</button>
       </div>
     </header>
