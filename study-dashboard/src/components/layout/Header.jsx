@@ -7,14 +7,10 @@ function Header() {
         <header className="header">
             <div>
                 <h1 className="header-title">Olá, estudante 👋</h1>
-                <p className="header-subtitle">
-                Você clicou {count} vezes no botão
-                </p>
+                <p className="header-subtitle">Organize sua rotina, acompanhe seu progresso e mantenha o foco.</p>
             </div>
 
-            <button className="header-button" onClick={() => setCount(count + 1)}>
-                Clique aqui
-            </button>
+            <button className="header-button">Novo Plano</button>
         </header>
     )
 }

@@ -137,9 +137,115 @@ a {
 }
 
 .custom-card {
-  background: white;
-  padding: 24px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 24px;
+  margin-top: 28px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.subject-section {
+  width: 100%;
+}
+
+.section-title {
+  font-size: 2.4rem;
+  margin-bottom: 24px;
+  color: #1e293b;
+}
+
+.subject-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.subject-input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  border-radius: 14px;
+  padding: 14px 18px;
+  outline: none;
+  font-size: 1.05rem;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.subject-input:focus {
+  border-color: #2563eb;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.subject-add-button {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 14px 22px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.15s, background-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.18);
+}
+
+.subject-add-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.subject-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0;
+  margin: 0;
+}
+
+.subject-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
   border-radius: 16px;
-  margin-top: 24px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.subject-name {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.subject-remove-button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.subject-remove-button:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+.empty-message {
+  color: #64748b;
+  font-size: 1.05rem;
+  padding: 12px 4px;
 }

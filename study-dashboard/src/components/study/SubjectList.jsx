@@ -1,44 +1,77 @@
 import { useState } from 'react'
-import Card from '../ui/Card';
+import Card from '../ui/Card'
 
 function SubjectList({ subjects, setSubjects }) {
-    const [newSubject, setNewSubject] = useState('')
+  const [newSubject, setNewSubject] = useState('')
 
-    function handleAddSubject() {
-        if (newSubject.trim() === '') return
+  function handleAddSubject() {
+    const trimmedSubject = newSubject.trim()
 
-        const newItem = {
-            id: Date.now(),
-            name: newSubject
-        }
+    if (trimmedSubject === '') return
 
-        setSubjects([...subjects, newItem])
-        setNewSubject('')
-    }
-
-    function handleRemoveSubject(id) {
-        const filtered = subjects.filter((subject) => subject.id !== id)
-        setSubjects(filtered)
-    }
-
-    return (
-        <Card>
-            <section>
-                <h2>Matérias</h2>
-                <div>
-                    <input type="text" placeholder="Nova matéria" value={newSubject} onChange={(e) => setNewSubject(e.target.value)}/>
-                    <button onClick={handleAddSubject}>Adicionar</button>
-                </div>
-            <ul>
-                {subjects.map((subject) => (
-                <li key={subject.id}>{subject.name}
-                    <button onClick={() => handleRemoveSubject(subject.id)}>❌</button>
-                </li>
-                ))}
-            </ul>
-            </section>
-        </Card>
+    const subjectAlreadyExists = subjects.some(
+      (subject) => subject.name.toLowerCase() === trimmedSubject.toLowerCase()
     )
+
+    if (subjectAlreadyExists) {
+      alert('Essa matéria já foi adicionada.')
+      return
+    }
+
+    const newItem = {
+      id: Date.now(),
+      name: trimmedSubject
+    }
+
+    setSubjects([...subjects, newItem])
+    setNewSubject('')
+  }
+
+  function handleRemoveSubject(id) {
+    const filteredSubjects = subjects.filter((subject) => subject.id !== id)
+    setSubjects(filteredSubjects)
+  }
+
+  return (
+    <Card>
+      <section className="subject-section">
+        <h2 className="section-title">Matérias</h2>
+
+        <div className="subject-form">
+          <input
+            className="subject-input"
+            type="text"
+            placeholder="Nova matéria"
+            value={newSubject}
+            onChange={(e) => setNewSubject(e.target.value)}
+          />
+
+          <button className="subject-add-button" onClick={handleAddSubject}>
+            Adicionar
+          </button>
+        </div>
+
+        {subjects.length > 0 ? (
+          <ul className="subject-list">
+            {subjects.map((subject) => (
+              <li className="subject-item" key={subject.id}>
+                <span className="subject-name">{subject.name}</span>
+
+                <button
+                  className="subject-remove-button"
+                  onClick={() => handleRemoveSubject(subject.id)}
+                >✕</button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-message">
+            Nenhuma matéria cadastrada ainda.
+          </p>
+        )}
+      </section>
+    </Card>
+  )
 }
 
 export default SubjectList
