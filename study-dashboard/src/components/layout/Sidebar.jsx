@@ -9,14 +9,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage }) {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-brand">
-        <img
-          className="sidebar-logo"
-          src="/logo-study-strack.svg"
-          alt="Logo Study Strack"
-        />
-        <h2 className="sidebar-title">Study Strack</h2>
-      </div>
+      <h2 className="sidebar-title">StudyDash</h2>
 
       <nav className="sidebar-nav">
         {navItems.map((item) => (
