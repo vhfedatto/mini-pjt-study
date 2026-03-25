@@ -268,7 +268,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .summary-card {
@@ -319,6 +319,15 @@ body {
   margin-top: 4px;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .plans-empty {
