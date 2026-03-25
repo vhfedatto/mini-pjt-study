@@ -4,13 +4,13 @@ function Footer() {
   const team = [
     {
       name: 'Victor H Fedatto',
-      github: '#',
-      linkedin: '#'
+      github: 'https://github.com/vhfedatto',
+      linkedin: 'https://www.linkedin.com/in/victor-hugo-fedatto/'
     },
     {
       name: 'Kaliel Selhorst',
-      github: '#',
-      linkedin: '#'
+      github: 'https://github.com/Selhorstkaliel',
+      linkedin: 'https://www.linkedin.com/in/kaliel-selhorst-3baa12350/'
     }
   ]
 
@@ -19,9 +19,13 @@ function Footer() {
       <div className="footer__top">
         <section className="footer__brand-block">
           <div className="footer__brand">
-            <div className="footer__logo-mark" />
+            <img
+              className="footer__logo-image"
+              src="/logo-study-strack.svg"
+              alt="Logo Study Strack"
+            />
             <div>
-              <h3 className="footer__title">StudyDash</h3>
+              <h3 className="footer__title">Study Strack</h3>
             </div>
           </div>
           <p className="footer__subtitle">
@@ -81,7 +85,7 @@ function Footer() {
       </div>
 
       <div className="footer__bottom">
-        <span>© {year} StudyDash. Todos os direitos reservados.</span>
+        <span>© {year} Study Strack. Todos os direitos reservados.</span>
       </div>
     </footer>
   )
