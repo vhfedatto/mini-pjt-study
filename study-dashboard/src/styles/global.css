@@ -306,6 +306,13 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .summary-card::after {
   content: '';
   position: absolute;
@@ -323,6 +330,7 @@ body {
   font-size: 0.96rem;
   color: var(--text-muted);
   margin-bottom: 8px;
+  margin-top: 0;
 }
 
 .summary-card-value {
@@ -334,6 +342,46 @@ body {
 .summary-card-description {
   font-size: 0.93rem;
   color: var(--text-muted);
+}
+
+.summary-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.summary-card--alert {
+  background: linear-gradient(180deg, #fff4dc, #fffaf0);
+  border-color: rgba(194, 120, 3, 0.22);
+  box-shadow: 0 20px 45px rgba(194, 120, 3, 0.14);
+}
+
+.summary-card--alert::after {
+  background: linear-gradient(135deg, rgba(255, 194, 71, 0.28), transparent 60%);
+}
+
+.summary-card--alert .summary-card-title,
+.summary-card--alert .summary-card-description {
+  color: #8a5a00;
+}
+
+.summary-card--alert .summary-card-value {
+  color: #4a2d00;
+}
+
+.summary-card--alert .summary-card-icon {
+  background: rgba(255, 194, 71, 0.22);
+  color: #9a6200;
+  border: 1px solid rgba(194, 120, 3, 0.18);
 }
 
 .custom-card {

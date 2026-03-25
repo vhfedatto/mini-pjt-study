@@ -8,6 +8,16 @@ import PlanManager from '../components/plans/PlanManager'
 import { taskReducer } from '../reducers/taskReducer'
 
 function Dashboard() {
+	function formatDate(date) {
+		if (!date) return ''
+
+		return new Intl.DateTimeFormat('pt-BR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		}).format(new Date(`${date}T00:00:00`))
+	}
+
 	const [plans, setPlans] = useState(() => {
 		const stored =
 			localStorage.getItem('plans') || localStorage.getItem('studyPlans')
@@ -87,6 +97,22 @@ function Dashboard() {
 		return Math.round((completedTasks / filteredTasks.length) * 100)
 	}, [filteredTasks.length, completedTasks])
 
+	const nextDeadlineTask = useMemo(() => {
+		const pendingWithDeadline = filteredTasks
+			.filter((task) => !task.completed && task.dueDate)
+			.sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+
+		return pendingWithDeadline[0] ?? null
+	}, [filteredTasks])
+
+	const nextDeadlineSubject = useMemo(() => {
+		if (!nextDeadlineTask) return null
+
+		return filteredSubjects.find(
+			(subject) => subject.id === nextDeadlineTask.subjectId
+		) ?? null
+	}, [filteredSubjects, nextDeadlineTask])
+
 	useEffect(() => {
 		localStorage.setItem('plans', JSON.stringify(plans))
 		localStorage.setItem('studyPlans', JSON.stringify(plans))
@@ -159,6 +185,32 @@ function Dashboard() {
 					title="Progresso geral"
 					value={`${progressPercent}%`}
 					description="Percentual de tarefas concluídas"
+				/>
+
+				<SummaryCard
+					title="Prazo mais proximo"
+					value={nextDeadlineTask ? nextDeadlineTask.text : 'Sem prazos'}
+					description={
+						nextDeadlineTask
+							? `${nextDeadlineSubject?.name || 'Sem materia'} • vence em ${formatDate(nextDeadlineTask.dueDate)}`
+							: 'Nenhuma tarefa pendente com prazo definido'
+					}
+					variant="alert"
+					icon={
+						<svg viewBox="0 0 24 24" fill="none" role="img">
+							<path
+								d="M12 3.75a4.75 4.75 0 0 0-4.75 4.75v2.13c0 .62-.2 1.23-.56 1.74l-1.1 1.57a1.75 1.75 0 0 0 1.43 2.76h9.96a1.75 1.75 0 0 0 1.43-2.76l-1.1-1.57a3 3 0 0 1-.56-1.74V8.5A4.75 4.75 0 0 0 12 3.75Z"
+								stroke="currentColor"
+								strokeWidth="1.7"
+							/>
+							<path
+								d="M9.75 18.25a2.25 2.25 0 0 0 4.5 0"
+								stroke="currentColor"
+								strokeWidth="1.7"
+								strokeLinecap="round"
+							/>
+						</svg>
+					}
 				/>
 			</section>
 
