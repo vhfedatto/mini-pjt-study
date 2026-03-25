@@ -5,6 +5,7 @@ import SummaryCard from '../components/ui/SummaryCard'
 import SubjectList from '../components/study/SubjectList'
 import TaskList from '../components/study/TaskList'
 import { taskReducer } from '../reducers/taskReducer'
+import Footer from '../components/layout/Footer'
 
 function Dashboard() {
 	const [subjects, setSubjects] = useState(() => {
@@ -72,18 +73,21 @@ function Dashboard() {
 				</section>
 
         <section className="split-grid">
-          <SubjectList
-            subjects={subjects}
-            setSubjects={setSubjects}
-            isLoadingSubjects={isLoadingSubjects}
-          />
-          <TaskList
-						tasks={tasks}
-						dispatch={dispatch}
-						pendingTasks={pendingTasks}
-						completedTasks={completedTasks}
-					/>
+			<SubjectList
+				subjects={subjects}
+				setSubjects={setSubjects}
+				isLoadingSubjects={isLoadingSubjects}
+				tasks={tasks}
+			/>
+			<TaskList
+				tasks={tasks}
+				dispatch={dispatch}
+				pendingTasks={pendingTasks}
+				completedTasks={completedTasks}
+				subjects={subjects}
+			/>
         </section>
+				<Footer />
 			</section>
 		</main>
 	)

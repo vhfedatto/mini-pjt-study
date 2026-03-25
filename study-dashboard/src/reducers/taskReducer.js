@@ -5,7 +5,8 @@ export function taskReducer(state, action) {
         ...state,
         {
           id: Date.now(),
-          text: action.payload,
+          text: action.payload.text,
+          subjectId: action.payload.subjectId,
           completed: false
         }
       ]

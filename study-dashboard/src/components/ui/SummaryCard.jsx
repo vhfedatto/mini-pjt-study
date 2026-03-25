@@ -1,4 +1,4 @@
-function SummaryCard({ title, value={totalSubjects}, description }) {
+function SummaryCard({ title, value = 0, description }) {
     return (
         <article className="summary-card">
             <h3 className="summary-card-title">{title}</h3>
@@ -26,4 +26,3 @@ export default SummaryCard
 export default SummaryCard*/
 
 // Em React, normalmente preferimos desestruturar as props logo na assinatura da função. É melhor pois deixa mais limpo, melhor a leitura, evita repetição de props.
-
