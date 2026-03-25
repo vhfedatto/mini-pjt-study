@@ -3,51 +3,102 @@ import Header from '../components/layout/Header'
 import SummaryCard from '../components/ui/SummaryCard'
 import SubjectList from '../components/study/SubjectList'
 import TaskList from '../components/study/TaskList'
-import { taskReducer } from '../reducers/taskReducer'
 import Footer from '../components/layout/Footer'
+import PlanManager from '../components/plans/PlanManager'
+import { taskReducer } from '../reducers/taskReducer'
 
 function Dashboard() {
+	const [plans, setPlans] = useState(() => {
+		const stored =
+			localStorage.getItem('plans') || localStorage.getItem('studyPlans')
+		if (stored) return JSON.parse(stored)
+
+		return [
+			{
+				id: Date.now(),
+				name: 'Plano Geral',
+				description: 'Organize todos os seus estudos aqui',
+				goal: 'Manter o ritmo'
+			}
+		]
+	})
+
 	const [subjects, setSubjects] = useState(() => {
 		const stored = localStorage.getItem('subjects')
 		return stored ? JSON.parse(stored) : []
 	})
-	const [studyPlans, setStudyPlans] = useState(() => {
-		const stored = localStorage.getItem('studyPlans')
-		return stored ? JSON.parse(stored) : []
-	})
-	const [editingPlanId, setEditingPlanId] = useState(null)
-	const [editPlanTitle, setEditPlanTitle] = useState('')
-	const [editPlanFocus, setEditPlanFocus] = useState('')
-	const [editPlanDeadline, setEditPlanDeadline] = useState('')
+
 	const [tasks, dispatch] = useReducer(taskReducer, [], () => {
 		const stored = localStorage.getItem('tasks')
 		return stored ? JSON.parse(stored) : []
 	})
+
+	const [selectedPlanId, setSelectedPlanId] = useState(null)
+	const planForCreation = selectedPlanId ?? plans[0]?.id ?? null
+
+	useEffect(() => {
+		const defaultPlanId = plans[0]?.id
+		if (!defaultPlanId) return
+
+		const subjectsNeedPlan = subjects.some((s) => !s.planId)
+		if (subjectsNeedPlan) {
+			setSubjects((prev) =>
+				prev.map((s) => (s.planId ? s : { ...s, planId: defaultPlanId }))
+			)
+		}
+
+		const tasksNeedPlan = tasks.some((t) => !t.planId)
+		if (tasksNeedPlan) {
+			dispatch({
+				type: 'HYDRATE',
+				payload: tasks.map((t) =>
+					t.planId ? t : { ...t, planId: defaultPlanId }
+				)
+			})
+		}
+	}, [plans, subjects, tasks])
+
+	const filteredSubjects = useMemo(
+		() =>
+			selectedPlanId
+				? subjects.filter((subject) => subject.planId === selectedPlanId)
+				: subjects,
+		[subjects, selectedPlanId]
+	)
+
+	const filteredTasks = useMemo(
+		() =>
+			selectedPlanId
+				? tasks.filter((task) => task.planId === selectedPlanId)
+				: tasks,
+		[tasks, selectedPlanId]
+	)
+
 	const pendingTasks = useMemo(
-		() => tasks.filter((task) => !task.completed).length,
-		[tasks]
+		() => filteredTasks.filter((task) => !task.completed).length,
+		[filteredTasks]
 	)
 	const completedTasks = useMemo(
-		() => tasks.filter((task) => task.completed).length,
-		[tasks]
+		() => filteredTasks.filter((task) => task.completed).length,
+		[filteredTasks]
 	)
 	const progressPercent = useMemo(() => {
-		if (tasks.length === 0) return 0
-		return Math.round((completedTasks / tasks.length) * 100)
-	}, [tasks.length, completedTasks])
+		if (filteredTasks.length === 0) return 0
+		return Math.round((completedTasks / filteredTasks.length) * 100)
+	}, [filteredTasks.length, completedTasks])
 
 	useEffect(() => {
-		localStorage.setItem('subjects', JSON.stringify(subjects))
-	}, [subjects])
-
-	useEffect(() => {
-		localStorage.setItem('tasks', JSON.stringify(tasks))
-	}, [tasks])
+		localStorage.setItem('plans', JSON.stringify(plans))
+		localStorage.setItem('studyPlans', JSON.stringify(plans))
+	}, [plans])
 
 	useEffect(() => {
 		const syncPlans = () => {
-			const stored = localStorage.getItem('studyPlans')
-			setStudyPlans(stored ? JSON.parse(stored) : [])
+			const stored =
+				localStorage.getItem('plans') || localStorage.getItem('studyPlans')
+			if (stored) {
+				setPlans(JSON.parse(stored))
+			}
 		}
 
 		window.addEventListener('study-plans-updated', syncPlans)
@@ -59,175 +110,88 @@ function Dashboard() {
 		}
 	}, [])
 
-	function savePlans(nextPlans) {
-		localStorage.setItem('studyPlans', JSON.stringify(nextPlans))
-		setStudyPlans(nextPlans)
-		window.dispatchEvent(new Event('study-plans-updated'))
+	useEffect(() => {
+		localStorage.setItem('subjects', JSON.stringify(subjects))
+	}, [subjects])
+
+	useEffect(() => {
+		localStorage.setItem('tasks', JSON.stringify(tasks))
+	}, [tasks])
+
+	function handleAddPlan(newPlan) {
+		const plan = { id: Date.now(), ...newPlan }
+		setPlans((prev) => [...prev, plan])
+		setSelectedPlanId(plan.id)
+	}
+
+	function handleEditPlan(planId, changes) {
+		setPlans((prev) =>
+			prev.map((plan) =>
+				plan.id === planId ? { ...plan, ...changes } : plan
+			)
+		)
 	}
 
 	function handleDeletePlan(planId) {
-		const nextPlans = studyPlans.filter((plan) => plan.id !== planId)
-		savePlans(nextPlans)
-
-		if (editingPlanId === planId) {
-			setEditingPlanId(null)
-			setEditPlanTitle('')
-			setEditPlanFocus('')
-			setEditPlanDeadline('')
-		}
-	}
-
-	function handleStartEdit(plan) {
-		setEditingPlanId(plan.id)
-		setEditPlanTitle(plan.title)
-		setEditPlanFocus(plan.focus)
-		setEditPlanDeadline(plan.deadline)
-	}
-
-	function handleCancelEdit() {
-		setEditingPlanId(null)
-		setEditPlanTitle('')
-		setEditPlanFocus('')
-		setEditPlanDeadline('')
-	}
-
-	function handleSaveEdit(planId, event) {
-		event.preventDefault()
-
-		const nextPlans = studyPlans.map((plan) => {
-			if (plan.id !== planId) return plan
-
-			return {
-				...plan,
-				title: editPlanTitle.trim(),
-				focus: editPlanFocus.trim(),
-				deadline: editPlanDeadline
-			}
-		})
-
-		savePlans(nextPlans)
-		handleCancelEdit()
+		setPlans((prev) => prev.filter((p) => p.id !== planId))
+		setSelectedPlanId((prev) => (prev === planId ? null : prev))
+		// opcional: remover plano das matérias/tarefas? manter dados para reatribuição manual.
 	}
 
 	return (
 		<section className="dashboard-content">
-				<Header />
+			<Header />
 
-				<section className="summary-grid">
-					<SummaryCard
-						title="Matérias ativas"
-						value={subjects.length}
-						description="Total de matérias cadastradas"
-					/>
+			<section className="summary-grid">
+				<SummaryCard
+					title="Matérias ativas"
+					value={filteredSubjects.length}
+					description="Total de matérias cadastradas"
+				/>
 
-					<SummaryCard
-						title="Tarefas pendentes"
-						value={pendingTasks}
-						description="Ainda restam tarefas por fazer"
-					/>
+				<SummaryCard
+					title="Tarefas pendentes"
+					value={pendingTasks}
+					description="Ainda restam tarefas por fazer"
+				/>
 
-					<SummaryCard
-						title="Progresso geral"
-						value={`${progressPercent}%`}
-						description="Percentual de tarefas concluídas"
-					/>
-				</section>
-
-				<section className="custom-card">
-					<h2 className="section-title">Planos de estudo</h2>
-					{studyPlans.length === 0 ? (
-						<p className="plans-empty">Nenhum plano salvo ainda. Clique em Novo Plano para criar o primeiro.</p>
-					) : (
-						<div className="plans-grid">
-							{studyPlans.map((plan) => {
-								const formattedDeadline = plan.deadline
-									? new Date(`${plan.deadline}T00:00:00`).toLocaleDateString('pt-BR')
-									: 'Sem prazo'
-								const isEditing = editingPlanId === plan.id
-
-								return (
-									<article className="plan-item" key={plan.id}>
-										{isEditing ? (
-											<form className="plan-edit-form" onSubmit={(event) => handleSaveEdit(plan.id, event)}>
-												<input
-													className="plan-input"
-													type="text"
-													value={editPlanTitle}
-													onChange={(event) => setEditPlanTitle(event.target.value)}
-													required
-												/>
-												<input
-													className="plan-input"
-													type="text"
-													value={editPlanFocus}
-													onChange={(event) => setEditPlanFocus(event.target.value)}
-													required
-												/>
-												<input
-													className="plan-input"
-													type="date"
-													value={editPlanDeadline}
-													onChange={(event) => setEditPlanDeadline(event.target.value)}
-													required
-												/>
-
-												<div className="plan-item-actions">
-													<button type="button" className="plan-action-btn" onClick={handleCancelEdit}>
-														Cancelar
-													</button>
-													<button type="submit" className="plan-action-btn">
-														Salvar
-													</button>
-												</div>
-											</form>
-										) : (
-											<>
-												<h3 className="plan-item-title">{plan.title}</h3>
-												<p className="plan-item-focus">Foco: {plan.focus}</p>
-												<p className="plan-item-deadline">Prazo: {formattedDeadline}</p>
-
-												<div className="plan-item-actions">
-													<button
-														type="button"
-														className="plan-action-btn"
-														onClick={() => handleStartEdit(plan)}
-													>
-														Editar
-													</button>
-													<button
-														type="button"
-														className="plan-action-btn plan-action-btn-danger"
-														onClick={() => handleDeletePlan(plan.id)}
-													>
-														Excluir
-													</button>
-												</div>
-											</>
-										)}
-									</article>
-								)
-							})}
-						</div>
-					)}
-				</section>
-
-        <section className="split-grid">
-			<SubjectList
-				subjects={subjects}
-				setSubjects={setSubjects}
-				isLoadingSubjects={false}
-				tasks={tasks}
-			/>
-			<TaskList
-				tasks={tasks}
-				dispatch={dispatch}
-				pendingTasks={pendingTasks}
-				completedTasks={completedTasks}
-				subjects={subjects}
-			/>
-        </section>
-				<Footer />
+				<SummaryCard
+					title="Progresso geral"
+					value={`${progressPercent}%`}
+					description="Percentual de tarefas concluídas"
+				/>
 			</section>
+
+				<PlanManager
+					plans={plans}
+					selectedPlanId={selectedPlanId}
+					onSelectPlan={setSelectedPlanId}
+					onAddPlan={handleAddPlan}
+					onEditPlan={handleEditPlan}
+					onDeletePlan={handleDeletePlan}
+					subjects={subjects}
+					tasks={tasks}
+				/>
+
+			<section className="split-grid">
+				<SubjectList
+					subjects={filteredSubjects}
+					setSubjects={setSubjects}
+					isLoadingSubjects={false}
+					tasks={filteredTasks}
+					activePlanId={planForCreation}
+				/>
+				<TaskList
+					tasks={filteredTasks}
+					dispatch={dispatch}
+					pendingTasks={pendingTasks}
+					completedTasks={completedTasks}
+					subjects={filteredSubjects}
+					activePlanId={planForCreation}
+				/>
+			</section>
+			<Footer />
+		</section>
 	)
 }
 

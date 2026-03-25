@@ -209,12 +209,13 @@ body {
 }
 
 .plan-modal {
-  width: min(520px, 100%);
+  width: min(560px, 100%);
   border-radius: var(--radius-lg);
   background: var(--panel);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
-  padding: 22px;
+  padding: 24px;
+  text-align: left;
 }
 
 .plan-modal-title {
@@ -225,12 +226,22 @@ body {
 .plan-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+  width: 100%;
+}
+
+.plan-field-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
 }
 
 .plan-field-label {
   font-size: 0.94rem;
   color: var(--text-muted);
+  text-align: left;
 }
 
 .plan-input {
@@ -244,11 +255,23 @@ body {
   font-family: inherit;
   font-size: 0.97rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
 }
 
 .plan-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.plan-textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.plan-input::placeholder,
+.plan-textarea::placeholder {
+  text-align: left;
 }
 
 .plan-modal-actions {
@@ -406,6 +429,136 @@ body {
   border-color: transparent;
 }
 
+.plan-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.plan-select {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plan-select label {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.plan-form {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.plan-fields {
+  display: grid;
+  flex: 1;
+  min-width: 260px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.plan-cards {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.plan-card {
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(61, 9, 9, 0.16);
+  border-color: rgba(61, 9, 9, 0.2);
+}
+
+.plan-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 18px 40px rgba(61, 9, 9, 0.2);
+}
+
+.plan-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plan-card-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.plan-card-desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+}
+
+.plan-card-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-card-helper {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.plan-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.plan-action-btn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.92rem;
+  transition: background-color 0.2s ease, transform 0.16s ease, border-color 0.2s ease;
+}
+
+.plan-action-btn:hover {
+  background: var(--accent-soft);
+  border-color: rgba(61, 9, 9, 0.28);
+  transform: translateY(-1px);
+}
+
+.plan-action-btn-danger {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #a52e2e, #7a1616);
+}
+
+.plan-action-btn-danger:hover {
+  background: linear-gradient(135deg, #bc3b3b, #8f1f1f);
+  border-color: transparent;
+}
+
 .footer {
   margin-top: 22px;
   padding: 24px;
@@ -413,6 +566,9 @@ body {
   background: var(--panel);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .footer__top {
@@ -432,6 +588,30 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.footer__left,
+.footer__devs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer__label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.footer__dev {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--panel-muted);
+  border: 1px solid var(--border);
 }
 
 .footer__logo-mark {
@@ -527,8 +707,9 @@ body {
 
 .footer__links {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .footer__links a {
@@ -578,6 +759,39 @@ body {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.92rem;
+}
+
+.footer__center {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer__logo-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer__logo-slot {
+  width: 160px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  background: var(--panel-muted);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.footer__right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 @media (max-width: 980px) {

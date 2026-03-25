@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import Card from '../ui/Card'
 
-function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects }) {
+function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, activePlanId }) {
   const [newTask, setNewTask] = useState('')
   const [selectedSubjectId, setSelectedSubjectId] = useState('')
   const subjectOptions = subjects ?? []
@@ -12,18 +12,23 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects }) {
       alert('Selecione uma matéria para a tarefa.')
       return
     }
+    if (!activePlanId) {
+      alert('Selecione um plano para adicionar tarefas.')
+      return
+    }
 
     dispatch({
       type: 'ADD_TASK',
       payload: {
         text: newTask.trim(),
-        subjectId: Number(selectedSubjectId)
+        subjectId: Number(selectedSubjectId),
+        planId: activePlanId
       }
     })
 
     setNewTask('')
     setSelectedSubjectId('')
-  }, [newTask, selectedSubjectId, dispatch])
+  }, [newTask, selectedSubjectId, activePlanId, dispatch])
 
   return (
     <Card>

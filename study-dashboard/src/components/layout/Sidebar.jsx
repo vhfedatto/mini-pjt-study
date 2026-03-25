@@ -2,8 +2,8 @@
 function Sidebar({ activePage = 'dashboard', setActivePage }) {
   const navItems = [
     { key: 'dashboard', label: 'Dashboard' },
-    { key: 'subjects', label: 'Matérias' },
-    { key: 'tasks', label: 'Tarefas' },
+    { key: 'subjects', label: 'Agenda' },
+    { key: 'tasks', label: 'Flashcards' },
     { key: 'progress', label: 'Progresso' },
   ]
 

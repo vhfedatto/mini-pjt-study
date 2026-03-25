@@ -7,6 +7,7 @@ export function taskReducer(state, action) {
           id: Date.now(),
           text: action.payload.text,
           subjectId: action.payload.subjectId,
+          planId: action.payload.planId,
           completed: false
         }
       ]
@@ -25,6 +26,9 @@ export function taskReducer(state, action) {
           (a, b) =>
             Number(a.completed) - Number(b.completed) || a.id - b.id
         )
+
+    case 'HYDRATE':
+      return action.payload
 
     default:
       return state

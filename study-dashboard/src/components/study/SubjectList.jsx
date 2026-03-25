@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Card from '../ui/Card'
 
-function SubjectList({ subjects, setSubjects, isLoadingSubjects, tasks = [] }) {
+function SubjectList({
+  subjects,
+  setSubjects,
+  isLoadingSubjects,
+  tasks = [],
+  activePlanId
+}) {
   const [newSubject, setNewSubject] = useState('')
   const inputRef = useRef(null)
 
@@ -18,6 +24,10 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects, tasks = [] }) {
   const handleAddSubject = useCallback(() => {
     const trimmedSubject = newSubject.trim()
     if (trimmedSubject === '') return
+    if (!activePlanId) {
+      alert('Selecione ou crie um plano antes de adicionar matérias.')
+      return
+    }
 
     const exists = subjects.some(
       (s) => s.name.toLowerCase() === trimmedSubject.toLowerCase()
@@ -30,7 +40,7 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects, tasks = [] }) {
 
     setSubjects([
       ...subjects,
-      { id: Date.now(), name: trimmedSubject }
+      { id: Date.now(), name: trimmedSubject, planId: activePlanId }
     ])
 
     setNewSubject('')
