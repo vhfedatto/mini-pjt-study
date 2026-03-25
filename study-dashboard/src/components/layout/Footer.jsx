@@ -17,35 +17,44 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer__top">
-        <section className="footer__brand-block">
-          <div className="footer__brand">
+        <section className="footer__brand">
+          <div className="footer__brand-row">
             <img
               className="footer__logo-image"
               src="/logo-study-strack.svg"
               alt="Logo Study Strack"
             />
+
             <div>
               <h3 className="footer__title">Study Strack</h3>
             </div>
           </div>
-          <p className="footer__subtitle">
-            Organize seus estudos, acompanhe tarefas e avance com mais clareza.</p>
+              <p className="footer__subtitle">
+                Organize seus estudos com clareza, ritmo e constancia.
+              </p>
         </section>
 
-        <section className="footer__section">
-          <p className="footer__section-title">Equipe</p>
+        <nav className="footer__nav" aria-label="Links institucionais do rodape">
+          <p className="footer__heading">Institucional</p>
+          <a href="#">Quem somos?</a>
+          <a href="#">Politicas de Privacidade</a>
+          <a href="#">Termos de uso</a>
+        </nav>
 
-          <div className="footer__team">
+        <section className="footer__credits">
+          <p className="footer__heading">Equipe</p>
+
+          <div className="footer__team-list">
             {team.map((member) => (
-              <article className="footer__team-card" key={member.name}>
+              <div className="footer__team-item" key={member.name}>
                 <div>
                   <p className="footer__member-name">{member.name}</p>
                   <p className="footer__member-role">Desenvolvimento</p>
                 </div>
 
-                <div className="footer__dev-links">
+                <div className="footer__socials">
                   <a
-                    className="icon-link"
+                    className="footer__social"
                     aria-label={`Github de ${member.name}`}
                     href={member.github}
                     target="_blank"
@@ -57,7 +66,7 @@ function Footer() {
                   </a>
 
                   <a
-                    className="icon-link"
+                    className="footer__social"
                     aria-label={`LinkedIn de ${member.name}`}
                     href={member.linkedin}
                     target="_blank"
@@ -68,27 +77,18 @@ function Footer() {
                     </svg>
                   </a>
                 </div>
-              </article>
+              </div>
             ))}
           </div>
-        </section>
-
-        <section className="footer__section">
-          <p className="footer__section-title">Links úteis</p>
-
-          <nav className="footer__links" aria-label="Links úteis do rodapé">
-            <a href="#">Termos de uso</a>
-            <a href="#">Privacidade</a>
-            <a href="#">Suporte</a>
-          </nav>
         </section>
       </div>
 
       <div className="footer__bottom">
-        <span>© {year} Study Strack. Todos os direitos reservados.</span>
+        <span>© {year} Study Strack</span>
+        <span>Feito para transformar planejamento em constancia.</span>
       </div>
     </footer>
   )
 }
 
-export default Footer;
+export default Footer

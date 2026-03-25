@@ -4,12 +4,32 @@ import Card from '../ui/Card'
 function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, activePlanId }) {
   const [newTask, setNewTask] = useState('')
   const [selectedSubjectId, setSelectedSubjectId] = useState('')
+  const [dueDate, setDueDate] = useState('')
   const subjectOptions = subjects ?? []
+  const today = new Date().toISOString().split('T')[0]
+
+  function formatDueDate(date) {
+    if (!date) return ''
+
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(new Date(`${date}T00:00:00`))
+  }
 
   const handleAddTask = useCallback(() => {
     if (newTask.trim() === '') return
     if (selectedSubjectId === '') {
       alert('Selecione uma matéria para a tarefa.')
+      return
+    }
+    if (dueDate === '') {
+      alert('Selecione um prazo para a tarefa.')
+      return
+    }
+    if (dueDate < today) {
+      alert('O prazo não pode ser anterior ao dia de hoje.')
       return
     }
     if (!activePlanId) {
@@ -22,13 +42,15 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
       payload: {
         text: newTask.trim(),
         subjectId: Number(selectedSubjectId),
-        planId: activePlanId
+        planId: activePlanId,
+        dueDate
       }
     })
 
     setNewTask('')
     setSelectedSubjectId('')
-  }, [newTask, selectedSubjectId, activePlanId, dispatch])
+    setDueDate('')
+  }, [newTask, selectedSubjectId, dueDate, today, activePlanId, dispatch])
 
   return (
     <Card>
@@ -63,12 +85,20 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
             }}
           />
 
+          <input
+            className="subject-input"
+            type="date"
+            value={dueDate}
+            min={today}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+
           <button className="subject-add-button" onClick={handleAddTask}>
             Adicionar
           </button>
         </div>
 
-        <ul className="subject-list">
+        <ul className="subject-list task-list">
           {tasks.map((task) => {
             const subject = subjectOptions.find((item) => item.id === task.subjectId)
 
@@ -84,6 +114,11 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
                   <p className="task-subject-label">
                     {subject ? subject.name : 'Sem matéria'}
                   </p>
+                  {task.dueDate ? (
+                    <p className="task-subject-label">
+                      Prazo: {formatDueDate(task.dueDate)}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="chip-group">

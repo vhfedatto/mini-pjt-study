@@ -3,6 +3,7 @@ import Card from '../ui/Card'
 
 function SubjectList({
   subjects,
+  visibleSubjects = subjects,
   setSubjects,
   isLoadingSubjects,
   tasks = [],
@@ -30,7 +31,9 @@ function SubjectList({
     }
 
     const exists = subjects.some(
-      (s) => s.name.toLowerCase() === trimmedSubject.toLowerCase()
+      (s) =>
+        s.planId === activePlanId &&
+        s.name.toLowerCase() === trimmedSubject.toLowerCase()
     )
 
     if (exists){
@@ -38,14 +41,14 @@ function SubjectList({
       return
     } 
 
-    setSubjects([
-      ...subjects,
+    setSubjects((prev) => [
+      ...prev,
       { id: Date.now(), name: trimmedSubject, planId: activePlanId }
     ])
 
     setNewSubject('')
     inputRef.current?.focus()
-  }, [newSubject, subjects, setSubjects])
+  }, [activePlanId, newSubject, setSubjects, subjects])
   
 
   function handleRemoveSubject(id) {
@@ -56,8 +59,7 @@ function SubjectList({
       return
     }
 
-    const filteredSubjects = subjects.filter((subject) => subject.id !== id)
-    setSubjects(filteredSubjects)
+    setSubjects((prev) => prev.filter((subject) => subject.id !== id))
   }
 
   return (
@@ -85,13 +87,13 @@ function SubjectList({
 
         {isLoadingSubjects ? (
           <p className="empty-message">Carregando matérias...</p>
-        ) : subjects.length > 0 ? (
+        ) : visibleSubjects.length > 0 ? (
           <ul
             className={`subject-list ${
-              subjects.length >= 4 ? 'subject-list-grid' : ''
+              visibleSubjects.length >= 4 ? 'subject-list-grid' : ''
             }`}
           >
-            {subjects.map((subject) => {
+            {visibleSubjects.map((subject) => {
               const totalTasksForSubject = tasks.filter(
                 (task) => task.subjectId === subject.id
               ).length

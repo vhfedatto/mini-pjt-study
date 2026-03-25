@@ -175,10 +175,11 @@ function Dashboard() {
 
 			<section className="split-grid">
 				<SubjectList
-					subjects={filteredSubjects}
+					subjects={subjects}
+					visibleSubjects={filteredSubjects}
 					setSubjects={setSubjects}
 					isLoadingSubjects={false}
-					tasks={filteredTasks}
+					tasks={tasks}
 					activePlanId={planForCreation}
 				/>
 				<TaskList

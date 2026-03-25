@@ -8,6 +8,7 @@ export function taskReducer(state, action) {
           text: action.payload.text,
           subjectId: action.payload.subjectId,
           planId: action.payload.planId,
+          dueDate: action.payload.dueDate,
           completed: false
         }
       ]
