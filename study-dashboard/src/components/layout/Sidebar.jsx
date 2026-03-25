@@ -1,18 +1,30 @@
-//Componente funcional
-function Sidebar(){
-    //O que vai aparecer
-    return(
-        <aside className="sidebar">
-            <h2 className="sidebar-title">StudyDash</h2>
-            
-            <nav className="sidebar-nav">
-                <a href="#">Dashboard</a>
-                <a href="#">Matérias</a>
-                <a href="#">Tarefas</a>
-                <a href="#">Progresso</a>
-            </nav>
-        </aside>
-    )
+// Componente funcional
+function Sidebar({ activePage = 'dashboard', setActivePage }) {
+  const navItems = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'subjects', label: 'Matérias' },
+    { key: 'tasks', label: 'Tarefas' },
+    { key: 'progress', label: 'Progresso' },
+  ]
+
+  return (
+    <aside className="sidebar">
+      <h2 className="sidebar-title">StudyDash</h2>
+
+      <nav className="sidebar-nav">
+        {navItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setActivePage?.(item.key)}
+            className={activePage === item.key ? 'sidebar-link-active' : ''}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+    </aside>
+  )
 }
 
 export default Sidebar;

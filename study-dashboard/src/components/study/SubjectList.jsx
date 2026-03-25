@@ -52,7 +52,7 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects, tasks = [] }) {
 
   return (
     <Card>
-      <section className="subject-section">
+      <section className="panel-section subject-section">
         <h2 className="section-title">Matérias</h2>
 
         <div className="subject-form">
@@ -78,7 +78,7 @@ function SubjectList({ subjects, setSubjects, isLoadingSubjects, tasks = [] }) {
         ) : subjects.length > 0 ? (
           <ul
             className={`subject-list ${
-              subjects.length > 5 ? 'subject-list-grid' : ''
+              subjects.length >= 4 ? 'subject-list-grid' : ''
             }`}
           >
             {subjects.map((subject) => {
