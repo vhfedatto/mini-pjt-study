@@ -1,12 +1,17 @@
 import { useCallback, useState } from 'react'
 import Card from '../ui/Card'
 
-function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, activePlanId }) {
+function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, activePlanId, plans = [] }) {
   const [newTask, setNewTask] = useState('')
   const [selectedSubjectId, setSelectedSubjectId] = useState('')
   const [dueDate, setDueDate] = useState('')
   const subjectOptions = subjects ?? []
   const today = new Date().toISOString().split('T')[0]
+  const subjectNameCounts = subjectOptions.reduce((acc, subject) => {
+    const key = subject.name.trim().toLowerCase()
+    acc[key] = (acc[key] ?? 0) + 1
+    return acc
+  }, {})
 
   function formatDueDate(date) {
     if (!date) return ''
@@ -19,9 +24,18 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
   }
 
   const handleAddTask = useCallback(() => {
+    const selectedSubject = subjectOptions.find(
+      (subject) => subject.id === Number(selectedSubjectId)
+    )
+    const resolvedPlanId = selectedSubject?.planId ?? activePlanId ?? null
+
     if (newTask.trim() === '') return
     if (selectedSubjectId === '') {
       alert('Selecione uma matéria para a tarefa.')
+      return
+    }
+    if (!selectedSubject) {
+      alert('A matéria selecionada não foi encontrada.')
       return
     }
     if (dueDate === '') {
@@ -32,8 +46,8 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
       alert('O prazo não pode ser anterior ao dia de hoje.')
       return
     }
-    if (!activePlanId) {
-      alert('Selecione um plano para adicionar tarefas.')
+    if (!resolvedPlanId) {
+      alert('Nao foi possivel identificar o plano desta materia.')
       return
     }
 
@@ -41,8 +55,8 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
       type: 'ADD_TASK',
       payload: {
         text: newTask.trim(),
-        subjectId: Number(selectedSubjectId),
-        planId: activePlanId,
+        subjectId: selectedSubject.id,
+        planId: resolvedPlanId,
         dueDate
       }
     })
@@ -50,7 +64,7 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
     setNewTask('')
     setSelectedSubjectId('')
     setDueDate('')
-  }, [newTask, selectedSubjectId, dueDate, today, activePlanId, dispatch])
+  }, [newTask, selectedSubjectId, dueDate, today, activePlanId, dispatch, subjectOptions])
 
   return (
     <Card>
@@ -67,11 +81,18 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
             value={selectedSubjectId}
             onChange={(e) => setSelectedSubjectId(e.target.value)}>
             <option value="">Selecione uma matéria</option>
-            {subjectOptions.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
-              </option>
-            ))}
+            {subjectOptions.map((subject) => {
+              const hasDuplicateName =
+                subjectNameCounts[subject.name.trim().toLowerCase()] > 1
+              const planName =
+                plans.find((plan) => plan.id === subject.planId)?.name || 'Plano sem nome'
+
+              return (
+                <option key={subject.id} value={subject.id}>
+                  {hasDuplicateName ? `${subject.name} - ${planName}` : subject.name}
+                </option>
+              )
+            })}
           </select>
         </div>
         <div className="subject-form">

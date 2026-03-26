@@ -6,6 +6,11 @@ import Footer from '../components/layout/Footer'
 import { taskReducer } from '../reducers/taskReducer'
 
 function Tasks() {
+  const [plans] = useState(() => {
+    const stored = localStorage.getItem('plans') || localStorage.getItem('studyPlans')
+    return stored ? JSON.parse(stored) : []
+  })
+
   const [subjects] = useState(() => {
     const stored = localStorage.getItem('subjects')
     return stored ? JSON.parse(stored) : []
@@ -71,6 +76,7 @@ function Tasks() {
         pendingTasks={pendingTasks}
         completedTasks={completedTasks}
         subjects={subjects}
+        plans={plans}
       />
 
       <Footer />

@@ -241,6 +241,7 @@ function Dashboard() {
 					completedTasks={completedTasks}
 					subjects={filteredSubjects}
 					activePlanId={planForCreation}
+					plans={plans}
 				/>
 			</section>
 			<Footer />
