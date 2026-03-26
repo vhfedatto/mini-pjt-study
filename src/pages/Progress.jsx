@@ -5,6 +5,11 @@ import Footer from '../components/layout/Footer'
 import Card from '../components/ui/Card'
 
 function Progress() {
+  const defaultPlanColor = '#c46b2d'
+  const plans = useMemo(
+    () => JSON.parse(localStorage.getItem('plans') || localStorage.getItem('studyPlans') || '[]'),
+    []
+  )
   const subjects = useMemo(() => JSON.parse(localStorage.getItem('subjects') || '[]'), [])
   const tasks = useMemo(() => JSON.parse(localStorage.getItem('tasks') || '[]'), [])
 
@@ -20,8 +25,12 @@ function Progress() {
     const map = {}
 
     subjects.forEach((subject) => {
+      const linkedPlan = plans.find((plan) => plan.id === subject.planId)
       map[subject.id] = {
+        subjectId: subject.id,
         subjectName: subject.name,
+        planName: linkedPlan?.name || 'Plano sem nome',
+        planColor: linkedPlan?.color || defaultPlanColor,
         total: 0,
         completed: 0
       }
@@ -29,7 +38,10 @@ function Progress() {
 
     tasks.forEach((task) => {
       const subjectProgress = map[task.subjectId] || {
+        subjectId: task.subjectId,
         subjectName: 'Sem matéria',
+        planName: 'Plano sem nome',
+        planColor: defaultPlanColor,
         total: 0,
         completed: 0
       }
@@ -40,7 +52,7 @@ function Progress() {
     })
 
     return Object.values(map)
-  }, [subjects, tasks])
+  }, [defaultPlanColor, plans, subjects, tasks])
 
   return (
     <section className="dashboard-content">
@@ -65,8 +77,18 @@ function Progress() {
             {progressBySubject.map((item) => {
               const percent = item.total === 0 ? 0 : Math.round((item.completed / item.total) * 100)
               return (
-                <div className="progress-row" key={item.subjectName}>
-                  <div>{item.subjectName}</div>
+                <div className="progress-row" key={item.subjectId ?? item.subjectName}>
+                  <div>
+                    <span className="progress-subject-label">
+                      <span
+                        className="plan-color-dot"
+                        style={{ '--plan-color': item.planColor }}
+                        aria-hidden="true"
+                      />
+                      <span className="progress-subject-name">{item.subjectName}</span>
+                      <span className="progress-plan-name">{item.planName}</span>
+                    </span>
+                  </div>
                   <div>{item.total}</div>
                   <div>{item.completed}</div>
                   <div>{percent}%</div>

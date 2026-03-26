@@ -2,11 +2,13 @@ import { useContext, useState } from 'react'
 import { ThemeContext } from '../../context/ThemeContext'
 
 function Header() {
+  const defaultPlanColor = '#c46b2d'
   const { theme, toggleTheme } = useContext(ThemeContext)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const [planTitle, setPlanTitle] = useState('')
   const [planDescription, setPlanDescription] = useState('')
   const [planGoal, setPlanGoal] = useState('')
+  const [planColor, setPlanColor] = useState(defaultPlanColor)
 
   function handleCreatePlan(event) {
     event.preventDefault()
@@ -17,6 +19,7 @@ function Header() {
       name: planTitle.trim(),
       description: planDescription.trim(),
       goal: planGoal.trim(),
+      color: planColor,
       createdAt: new Date().toISOString()
     }
 
@@ -28,6 +31,7 @@ function Header() {
     setPlanTitle('')
     setPlanDescription('')
     setPlanGoal('')
+    setPlanColor(defaultPlanColor)
     setIsPlanModalOpen(false)
   }
 
@@ -114,11 +118,28 @@ function Header() {
                 />
               </div>
 
+              <div className="plan-field-group">
+                <label className="plan-field-label" htmlFor="plan-color">Cor do plano</label>
+                <div className="plan-color-picker">
+                  <input
+                    id="plan-color"
+                    className="plan-color-input"
+                    type="color"
+                    value={planColor}
+                    onChange={(event) => setPlanColor(event.target.value)}
+                  />
+                  <span className="plan-color-value">{planColor}</span>
+                </div>
+              </div>
+
               <div className="plan-modal-actions">
                 <button
                   type="button"
                   className="header-button header-button-secondary"
-                  onClick={() => setIsPlanModalOpen(false)}
+                  onClick={() => {
+                    setIsPlanModalOpen(false)
+                    setPlanColor(defaultPlanColor)
+                  }}
                 >
                   Cancelar
                 </button>

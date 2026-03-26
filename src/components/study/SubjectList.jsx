@@ -4,6 +4,7 @@ import Card from '../ui/Card'
 function SubjectList({
   subjects,
   visibleSubjects = subjects,
+  plans = [],
   setSubjects,
   isLoadingSubjects,
   tasks = [],
@@ -94,6 +95,7 @@ function SubjectList({
             }`}
           >
             {visibleSubjects.map((subject) => {
+              const plan = plans.find((item) => item.id === subject.planId)
               const totalTasksForSubject = tasks.filter(
                 (task) => task.subjectId === subject.id
               ).length
@@ -105,7 +107,14 @@ function SubjectList({
               return (
                 <li className="subject-item" key={subject.id}>
                   <div>
-                    <span className="subject-name">{subject.name}</span>
+                    <div className="subject-name-row">
+                      <span
+                        className="plan-color-dot"
+                        style={{ '--plan-color': plan?.color || '#c46b2d' }}
+                        aria-hidden="true"
+                      />
+                      <span className="subject-name">{subject.name}</span>
+                    </div>
                     <p className="task-subject-label">
                       {completedTasksForSubject}/{totalTasksForSubject} tarefas concluídas
                     </p>

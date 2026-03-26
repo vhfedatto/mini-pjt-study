@@ -8,6 +8,8 @@ import PlanManager from '../components/plans/PlanManager'
 import { taskReducer } from '../reducers/taskReducer'
 
 function Dashboard() {
+	const defaultPlanColor = '#c46b2d'
+
 	function formatDate(date) {
 		if (!date) return ''
 
@@ -28,7 +30,8 @@ function Dashboard() {
 				id: Date.now(),
 				name: 'Plano Geral',
 				description: 'Organize todos os seus estudos aqui',
-				goal: 'Manter o ritmo'
+				goal: 'Manter o ritmo',
+				color: defaultPlanColor
 			}
 		]
 	})
@@ -50,6 +53,15 @@ function Dashboard() {
 		const defaultPlanId = plans[0]?.id
 		if (!defaultPlanId) return
 
+		const plansNeedColor = plans.some((plan) => !plan.color)
+		if (plansNeedColor) {
+			setPlans((prev) =>
+				prev.map((plan) =>
+					plan.color ? plan : { ...plan, color: defaultPlanColor }
+				)
+			)
+		}
+
 		const subjectsNeedPlan = subjects.some((s) => !s.planId)
 		if (subjectsNeedPlan) {
 			setSubjects((prev) =>
@@ -66,7 +78,7 @@ function Dashboard() {
 				)
 			})
 		}
-	}, [plans, subjects, tasks])
+	}, [defaultPlanColor, plans, subjects, tasks])
 
 	const filteredSubjects = useMemo(
 		() =>
@@ -229,6 +241,7 @@ function Dashboard() {
 				<SubjectList
 					subjects={subjects}
 					visibleSubjects={filteredSubjects}
+					plans={plans}
 					setSubjects={setSubjects}
 					isLoadingSubjects={false}
 					tasks={tasks}

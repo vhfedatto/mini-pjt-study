@@ -275,6 +275,28 @@ body {
   text-align: left;
 }
 
+.plan-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-color-input {
+  width: 52px;
+  height: 40px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-muted);
+  cursor: pointer;
+}
+
+.plan-color-value {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .plan-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -551,9 +573,25 @@ body {
   gap: 8px;
 }
 
+.plan-card-title-group,
+.subject-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .plan-card-header h3 {
   margin: 0;
   font-size: 1.05rem;
+}
+
+.plan-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--plan-color, #c46b2d);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--plan-color, #c46b2d) 16%, transparent);
 }
 
 .plan-card-desc {
@@ -996,6 +1034,23 @@ body {
   padding: 10px 12px;
   border: 1px solid var(--border);
   font-size: 0.94rem;
+}
+
+.progress-subject-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.progress-subject-name {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.progress-plan-name {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .progress-row-header > div {

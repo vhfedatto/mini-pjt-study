@@ -14,6 +14,7 @@ function PlanManager({
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editGoal, setEditGoal] = useState('')
+  const [editColor, setEditColor] = useState('#c46b2d')
 
   const cards = useMemo(() => {
     const countFor = (planId) => ({
@@ -33,6 +34,7 @@ function PlanManager({
     setEditName(plan.name)
     setEditDescription(plan.description)
     setEditGoal(plan.goal)
+    setEditColor(plan.color || '#c46b2d')
   }
 
   function handleSaveEdit(e) {
@@ -41,12 +43,14 @@ function PlanManager({
     onEditPlan?.(editingId, {
       name: editName.trim(),
       description: editDescription.trim(),
-      goal: editGoal.trim()
+      goal: editGoal.trim(),
+      color: editColor
     })
     setEditingId(null)
     setEditName('')
     setEditDescription('')
     setEditGoal('')
+    setEditColor('#c46b2d')
   }
 
   function handleCancelEdit() {
@@ -54,6 +58,7 @@ function PlanManager({
     setEditName('')
     setEditDescription('')
     setEditGoal('')
+    setEditColor('#c46b2d')
   }
 
   return (
@@ -94,6 +99,16 @@ function PlanManager({
                       onChange={(e) => setEditGoal(e.target.value)}
                       placeholder="Meta"
                     />
+                    <div className="plan-color-picker">
+                      <input
+                        className="plan-color-input"
+                        type="color"
+                        value={editColor}
+                        onChange={(e) => setEditColor(e.target.value)}
+                        aria-label="Cor do plano"
+                      />
+                      <span className="plan-color-value">{editColor}</span>
+                    </div>
 
                     <div className="plan-card-actions">
                       <button type="button" className="plan-action-btn" onClick={handleCancelEdit}>
@@ -107,7 +122,14 @@ function PlanManager({
                 ) : (
                   <>
                     <div className="plan-card-header">
-                      <h3>{plan.name}</h3>
+                      <div className="plan-card-title-group">
+                        <span
+                          className="plan-color-dot"
+                          style={{ '--plan-color': plan.color || '#c46b2d' }}
+                          aria-hidden="true"
+                        />
+                        <h3>{plan.name}</h3>
+                      </div>
                       <span className="pill info">{plan.goal || 'Sem meta'}</span>
                     </div>
                     <p className="plan-card-desc">{plan.description || 'Sem descrição'}</p>
