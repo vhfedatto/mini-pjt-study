@@ -1,9 +1,15 @@
+import PropTypes from 'prop-types'
+
 // Componente funcional
-function Sidebar({ activePage = 'dashboard', setActivePage }) {
+function Sidebar(props) {
+  const { activePage = 'dashboard', setActivePage } = props
+
   const navItems = [
     { key: 'dashboard', label: 'Dashboard' },
-    { key: 'subjects', label: 'Agenda' },
-    { key: 'tasks', label: 'Flashcards' },
+    { key: 'agenda', label: 'Agenda' },
+    { key: 'subjects', label: 'Matérias' },
+    { key: 'tasks', label: 'Tarefas' },
+    { key: 'flashcards', label: 'Flashcards' },
     { key: 'important-dates', label: 'Provas' },
     { key: 'progress', label: 'Progresso' },
   ]
@@ -26,6 +32,11 @@ function Sidebar({ activePage = 'dashboard', setActivePage }) {
       </nav>
     </aside>
   )
+}
+
+Sidebar.propTypes = {
+  activePage: PropTypes.string,
+  setActivePage: PropTypes.func.isRequired
 }
 
 export default Sidebar
