@@ -4,6 +4,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage }) {
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'subjects', label: 'Agenda' },
     { key: 'tasks', label: 'Flashcards' },
+    { key: 'important-dates', label: 'Provas' },
     { key: 'progress', label: 'Progresso' },
   ]
 
@@ -27,4 +28,4 @@ function Sidebar({ activePage = 'dashboard', setActivePage }) {
   )
 }
 
-export default Sidebar;
+export default Sidebar
