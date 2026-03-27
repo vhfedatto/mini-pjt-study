@@ -1,8 +1,5 @@
-import PropTypes from 'prop-types'
-
 // Componente funcional
-function Sidebar(props) {
-  const { activePage = 'dashboard', setActivePage } = props
+function Sidebar({ activePage = 'dashboard', setActivePage }) {
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard' },
@@ -32,11 +29,6 @@ function Sidebar(props) {
       </nav>
     </aside>
   )
-}
-
-Sidebar.propTypes = {
-  activePage: PropTypes.string,
-  setActivePage: PropTypes.func.isRequired
 }
 
 export default Sidebar
