@@ -38,6 +38,7 @@ function ImportantDates() {
 
   useEffect(() => {
     localStorage.setItem('importantDates', JSON.stringify(importantDates))
+    globalThis.dispatchEvent(new Event('important-dates-updated'))
   }, [importantDates])
 
   const sortedDates = useMemo(() => {
