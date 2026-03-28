@@ -22,7 +22,7 @@ function GearIcon() {
 }
 
 // Componente funcional
-function Sidebar({ activePage = 'dashboard', setActivePage }) {
+function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onToggleSidebar }) {
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard' },
@@ -33,8 +33,27 @@ function Sidebar({ activePage = 'dashboard', setActivePage }) {
   ]
 
   return (
-    <aside className="sidebar">
-      <h2 className="sidebar-title">StudyDash</h2>
+    <aside className={`sidebar${isOpen ? ' is-open' : ' is-collapsed'}`}>
+      <div className="sidebar-header">
+        <h2 className="sidebar-title">StudyDash</h2>
+        <button
+          type="button"
+          className={`sidebar-inline-toggle${isOpen ? ' is-open' : ''}`}
+          aria-label={isOpen ? 'Ocultar menu lateral' : 'Mostrar menu lateral'}
+          onClick={onToggleSidebar}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              d="m14 6-6 6 6 6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
 
       <nav className="sidebar-nav">
         {navItems.map((item) => (

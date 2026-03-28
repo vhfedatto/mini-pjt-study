@@ -9,10 +9,47 @@ import Sidebar from './components/layout/Sidebar'
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return window.innerWidth > 1080
+  })
+
+  function toggleSidebar() {
+    setIsSidebarOpen((prev) => !prev)
+  }
+
+  function handleNavigate(pageKey) {
+    setActivePage(pageKey)
+  }
 
   return (
     <main className="dashboard-layout">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} />
+      <button
+        type="button"
+        className={`sidebar-toggle${isSidebarOpen ? ' is-open' : ''}`}
+        aria-label={isSidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+        onClick={toggleSidebar}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M4 7h16M4 12h16M4 17h12"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      <Sidebar
+        activePage={activePage}
+        setActivePage={handleNavigate}
+        isOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+      />
+
+      {isSidebarOpen ? <div className="sidebar-backdrop is-visible" /> : null}
+
       {activePage === 'dashboard' && <Dashboard />}
       {activePage === 'agenda' && <Agenda />}
       {activePage === 'flashcards' && <Flashcards />}
