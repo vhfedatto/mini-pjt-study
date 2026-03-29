@@ -2070,6 +2070,11 @@ button {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.agenda-detail-item.is-completed {
+  border-color: rgba(48, 164, 108, 0.32);
+  background: rgba(48, 164, 108, 0.12);
+}
+
 .agenda-detail-actions {
   display: flex;
   align-items: center;
@@ -2096,12 +2101,52 @@ button {
   text-overflow: ellipsis;
 }
 
+.agenda-detail-item.is-completed .agenda-detail-title {
+  text-decoration: line-through;
+  color: #9fd7b8;
+}
+
 .agenda-detail-description {
   color: var(--text-muted);
   font-size: 0.88rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.agenda-detail-item.is-completed .agenda-detail-description {
+  color: #8cbca2;
+}
+
+.agenda-check-button {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(48, 164, 108, 0.24);
+  border-radius: var(--radius-sm);
+  background: rgba(48, 164, 108, 0.12);
+  color: #2f7a56;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.16s ease;
+}
+
+.agenda-check-button:hover {
+  border-color: rgba(48, 164, 108, 0.42);
+  background: rgba(48, 164, 108, 0.2);
+  transform: translateY(-1px);
+}
+
+.agenda-check-button.is-completed {
+  background: #2f7a56;
+  color: #f3fff8;
+  border-color: #2f7a56;
+}
+
+.agenda-check-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .agenda-icon-button {
