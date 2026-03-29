@@ -13,9 +13,12 @@ const EXPORT_STORAGE_KEYS = [
 ]
 
 function Settings() {
+  // Referência para acionar o input de arquivo sem exibi-lo na interface.
   const importInputRef = useRef(null)
+  // Mensagem de retorno exibida após exportar ou importar um backup.
   const [statusMessage, setStatusMessage] = useState('')
 
+  // Exporta os dados principais do app em um arquivo JSON.
   function handleExport() {
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -34,10 +37,12 @@ function Settings() {
     setStatusMessage('Backup exportado com sucesso.')
   }
 
+  // Abre o seletor de arquivo para importar um backup.
   function handleOpenImport() {
     importInputRef.current?.click()
   }
 
+  // Lê o arquivo JSON escolhido e restaura os dados no localStorage.
   function handleImport(event) {
     const file = event.target.files?.[0]
     if (!file) return
@@ -82,6 +87,7 @@ function Settings() {
     <section className="dashboard-content">
       <Card>
         <section className="panel-section settings-panel">
+          {/* Título e descrição da área de backup. */}
           <div>
             <h2 className="section-title">Configurações</h2>
             <p className="settings-helper">
@@ -89,6 +95,7 @@ function Settings() {
             </p>
           </div>
 
+          {/* Ações principais para exportar ou importar dados. */}
           <div className="settings-actions">
             <button type="button" className="subject-add-button" onClick={handleExport}>
               Exportar backup JSON
@@ -98,6 +105,7 @@ function Settings() {
             </button>
           </div>
 
+          {/* Input oculto usado para selecionar o arquivo de importação. */}
           <input
             ref={importInputRef}
             type="file"
@@ -106,6 +114,7 @@ function Settings() {
             onChange={handleImport}
           />
 
+          {/* Cards com orientações rápidas sobre o backup. */}
           <div className="settings-card-grid">
             <article className="settings-info-card">
               <h3>O que entra no backup</h3>
@@ -117,6 +126,7 @@ function Settings() {
             </article>
           </div>
 
+          {/* Exibe o resultado da última ação de backup. */}
           {statusMessage ? <p className="settings-status">{statusMessage}</p> : null}
         </section>
       </Card>
