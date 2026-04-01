@@ -15,6 +15,7 @@ function Subjects() {
     return stored ? JSON.parse(stored) : []
   })
 
+  const [plans] = useState(() => {
   const subjectsWithTasks = useMemo(
     () => subjects.filter((subject) => tasks.some((task) => task.subjectId === subject.id)).length,
     [subjects, tasks]

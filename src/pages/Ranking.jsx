@@ -5,6 +5,42 @@ import Footer from '../components/layout/Footer'
 
 const COMPETITIONS_STORAGE_KEY = 'rankingCompetitions'
 
+function createCompetitionScoreboard(participants) {
+  return participants.map((entry) => {
+    return {
+      userId: entry.id,
+      points: 0,
+      streak: 0
+    }
+  })
+}
+
+function normalizeCompetition(competition, rankingEntries) {
+  const competitionParticipants = rankingEntries.filter(
+    (entry) => entry.isYou || competition.participants?.includes(entry.handle)
+  )
+
+  const hasValidScoreboard =
+    Array.isArray(competition.scoreboard) &&
+    competition.scoreboard.length === competitionParticipants.length &&
+    competition.scoreboard.every(
+      (score) =>
+        typeof score.userId === 'string' &&
+        typeof score.points === 'number' &&
+        typeof score.streak === 'number' &&
+        competitionParticipants.some((entry) => entry.id === score.userId)
+    )
+
+  if (hasValidScoreboard) {
+    return competition
+  }
+
+  return {
+    ...competition,
+    scoreboard: createCompetitionScoreboard(competitionParticipants)
+  }
+}
+
 function Ranking() {
   const rankingData = useMemo(
     () => [
@@ -46,6 +82,24 @@ function Ranking() {
   })
 
   useEffect(() => {
+    setCompetitions((prev) => {
+      let hasChanges = false
+
+      const normalizedCompetitions = prev.map((competition) => {
+        const normalizedCompetition = normalizeCompetition(competition, sortedRanking)
+
+        if (normalizedCompetition !== competition) {
+          hasChanges = true
+        }
+
+        return normalizedCompetition
+      })
+
+      return hasChanges ? normalizedCompetitions : prev
+    })
+  }, [sortedRanking])
+
+  useEffect(() => {
     localStorage.setItem(COMPETITIONS_STORAGE_KEY, JSON.stringify(competitions))
   }, [competitions])
 
@@ -72,9 +126,25 @@ function Ranking() {
   const selectedCompetitionRanking = useMemo(() => {
     if (!selectedCompetition) return []
 
-    return sortedRanking.filter(
+    const competitionParticipants = sortedRanking.filter(
       (entry) => entry.isYou || selectedCompetition.participants.includes(entry.handle)
     )
+
+    const scoreByUserId = new Map(
+      (selectedCompetition.scoreboard || []).map((score) => [score.userId, score])
+    )
+
+    return competitionParticipants
+      .map((entry) => {
+        const competitionScore = scoreByUserId.get(entry.id)
+
+        return {
+          ...entry,
+          points: competitionScore?.points ?? entry.points,
+          streak: competitionScore?.streak ?? entry.streak
+        }
+      })
+      .sort((firstUser, secondUser) => secondUser.points - firstUser.points)
   }, [selectedCompetition, sortedRanking])
 
   function handleCompetitionInputChange(event) {
@@ -119,12 +189,18 @@ function Ranking() {
       .filter((friend) => competitionForm.participantIds.includes(friend.id))
       .map((friend) => friend.handle)
 
+    const newCompetitionId = Date.now()
+    const competitionParticipants = sortedRanking.filter(
+      (entry) => entry.isYou || participantHandles.includes(entry.handle)
+    )
+
     const newCompetition = {
-      id: Date.now(),
+      id: newCompetitionId,
       title: titleValue,
       reward: rewardValue,
       deadline: competitionForm.deadline,
       participants: participantHandles,
+      scoreboard: createCompetitionScoreboard(competitionParticipants),
       createdAt: new Date().toISOString()
     }
 

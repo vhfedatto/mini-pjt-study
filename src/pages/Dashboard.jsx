@@ -3,6 +3,7 @@ import Header from '../components/layout/Header'
 import SummaryCard from '../components/ui/SummaryCard'
 import SubjectList from '../components/study/SubjectList'
 import TaskList from '../components/study/TaskList'
+import TodaySubjectRecommendation from '../components/study/TodaySubjectRecommendation'
 import Footer from '../components/layout/Footer'
 import PlanManager from '../components/plans/PlanManager'
 import { taskReducer } from '../reducers/taskReducer'
@@ -46,7 +47,13 @@ function Dashboard() {
 		return stored ? JSON.parse(stored) : []
 	})
 
+	const [agendaItems] = useState(() => {
+		const stored = localStorage.getItem('agendaItems')
+		return stored ? JSON.parse(stored) : []
+	})
+
 	const [selectedPlanId, setSelectedPlanId] = useState(null)
+	const [isRecommendationVisible, setIsRecommendationVisible] = useState(false)
 	const planForCreation = selectedPlanId ?? plans[0]?.id ?? null
 
 	useEffect(() => {
@@ -226,6 +233,15 @@ function Dashboard() {
 				/>
 			</section>
 
+			<TodaySubjectRecommendation
+				subjects={filteredSubjects}
+				tasks={filteredTasks}
+				agendaItems={agendaItems}
+				plans={plans}
+				isOpen={isRecommendationVisible}
+				onClose={() => setIsRecommendationVisible(false)}
+			/>
+
 				<PlanManager
 					plans={plans}
 					selectedPlanId={selectedPlanId}
@@ -233,6 +249,8 @@ function Dashboard() {
 					onAddPlan={handleAddPlan}
 					onEditPlan={handleEditPlan}
 					onDeletePlan={handleDeletePlan}
+					isRecommendationVisible={isRecommendationVisible}
+					onToggleRecommendation={() => setIsRecommendationVisible((prev) => !prev)}
 					subjects={subjects}
 					tasks={tasks}
 				/>

@@ -92,6 +92,7 @@ function Profile() {
                 ))}
               </div>
             </article>
+
           </div>
         </section>
       </Card>
