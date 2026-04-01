@@ -6,6 +6,7 @@ import Card from '../components/ui/Card'
 
 const AGENDA_STORAGE_KEY = 'agendaItems'
 const IMPORTANT_DATES_STORAGE_KEY = 'importantDates'
+const AUTO_TASK_EVENT_SOURCE = 'task-deadline'
 const CALENDAR_WEEK_DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
 const REPEAT_OPTIONS = [
   { value: 'none', label: 'Nao repetir' },
@@ -162,13 +163,41 @@ function normalizeAgendaItems(items) {
         subjectName: item.subjectName ?? '',
         eventName: item.eventName ?? item.title ?? '',
         dateKeys: normalizedDateKeys,
-        completed: Boolean(item.completed),
         startTime: item.startTime ?? '',
         endTime: item.endTime ?? '',
-        notes: item.notes ?? ''
+        notes: item.notes ?? '',
+        source: item.source ?? 'manual',
+        sourceTaskId: item.sourceTaskId ?? null
       }
     })
     .filter((item) => item.eventName && item.startTime && item.endTime && item.dateKeys.length > 0)
+}
+
+function toTaskEventId(taskId) {
+  return Number(taskId) + 2000000000000
+}
+
+function buildTaskDeadlineEvents(tasks, subjects) {
+  if (!Array.isArray(tasks) || !Array.isArray(subjects)) return []
+
+  return tasks
+    .filter((task) => task.subjectId && task.dueDate && !task.completed)
+    .map((task) => {
+      const linkedSubject = subjects.find((subject) => subject.id === task.subjectId)
+
+      return {
+        id: toTaskEventId(task.id),
+        subjectId: task.subjectId,
+        subjectName: linkedSubject?.name ?? 'Matéria removida',
+        eventName: `Estudar ${linkedSubject?.name ?? 'matéria'}`,
+        dateKeys: [task.dueDate],
+        startTime: '18:00',
+        endTime: '19:00',
+        notes: `Evento automático gerado pela tarefa: ${task.text}`,
+        source: AUTO_TASK_EVENT_SOURCE,
+        sourceTaskId: task.id
+      }
+    })
 }
 
 function getAgendaItemPrimaryDate(item) {
@@ -198,24 +227,13 @@ function PencilIcon() {
   )
 }
 
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="m5 12 4.2 4.2L19 6.5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  )
-}
-
 function Agenda() {
-  const [subjects] = useState(() => {
+  const [subjects, setSubjects] = useState(() => {
     const stored = localStorage.getItem('subjects')
+    return stored ? JSON.parse(stored) : []
+  })
+  const [tasks, setTasks] = useState(() => {
+    const stored = localStorage.getItem('tasks')
     return stored ? JSON.parse(stored) : []
   })
   const todayKey = toDateKey(new Date())
@@ -328,9 +346,34 @@ function Agenda() {
   }, [agendaItems])
 
   useEffect(() => {
+    const autoTaskEvents = buildTaskDeadlineEvents(tasks, subjects)
+
+    setAgendaItems((previous) => {
+      const manualItems = previous.filter((item) => item.source !== AUTO_TASK_EVENT_SOURCE)
+      const mergedItems = normalizeAgendaItems([...manualItems, ...autoTaskEvents])
+
+      if (JSON.stringify(previous) === JSON.stringify(mergedItems)) {
+        return previous
+      }
+
+      return mergedItems
+    })
+  }, [tasks, subjects])
+
+  useEffect(() => {
     const syncAgenda = () => {
       const stored = localStorage.getItem(AGENDA_STORAGE_KEY)
       setAgendaItems(normalizeAgendaItems(stored ? JSON.parse(stored) : []))
+    }
+
+    const syncSubjects = () => {
+      const stored = localStorage.getItem('subjects')
+      setSubjects(stored ? JSON.parse(stored) : [])
+    }
+
+    const syncTasks = () => {
+      const stored = localStorage.getItem('tasks')
+      setTasks(stored ? JSON.parse(stored) : [])
     }
 
     const syncImportantDates = () => {
@@ -339,11 +382,15 @@ function Agenda() {
     }
 
     globalThis.addEventListener('storage', syncAgenda)
+    globalThis.addEventListener('storage', syncSubjects)
+    globalThis.addEventListener('storage', syncTasks)
     globalThis.addEventListener('storage', syncImportantDates)
     globalThis.addEventListener('important-dates-updated', syncImportantDates)
 
     return () => {
       globalThis.removeEventListener('storage', syncAgenda)
+      globalThis.removeEventListener('storage', syncSubjects)
+      globalThis.removeEventListener('storage', syncTasks)
       globalThis.removeEventListener('storage', syncImportantDates)
       globalThis.removeEventListener('important-dates-updated', syncImportantDates)
     }
@@ -443,17 +490,12 @@ function Agenda() {
       repeatWeekDays
     })
 
-    const existingItem = editingAgendaItemId
-      ? agendaItems.find((item) => item.id === editingAgendaItemId)
-      : null
-
     const nextItem = {
       id: editingAgendaItemId ?? Date.now(),
       subjectId: selectedSubject?.id ?? null,
       subjectName: selectedSubject?.name ?? '',
       eventName: trimmedEventName,
       dateKeys: finalDateKeys,
-      completed: existingItem?.completed ?? false,
       startTime,
       endTime,
       notes: trimmedNotes
@@ -470,6 +512,11 @@ function Agenda() {
   }
 
   function handleEditAgendaItem(item) {
+    if (item.source === AUTO_TASK_EVENT_SOURCE) {
+      alert('Eventos automáticos de matéria são gerados pelas tarefas. Edite a tarefa para alterar este evento.')
+      return
+    }
+
     setEditingAgendaItemId(item.id)
     setSelectedSubjectId(item.subjectId ? String(item.subjectId) : '')
     setEventName(item.eventName)
@@ -486,15 +533,13 @@ function Agenda() {
   }
 
   function handleRemoveAgendaItem(id) {
-    setAgendaItems((previous) => previous.filter((item) => item.id !== id))
-  }
+    const selectedItem = agendaItems.find((item) => item.id === id)
+    if (selectedItem?.source === AUTO_TASK_EVENT_SOURCE) {
+      alert('Esse evento é automático da matéria e não pode ser removido aqui. Remova ou conclua a tarefa vinculada.')
+      return
+    }
 
-  function handleToggleAgendaItemCompleted(id) {
-    setAgendaItems((previous) =>
-      previous.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
-    )
+    setAgendaItems((previous) => previous.filter((item) => item.id !== id))
   }
 
   return (
@@ -629,41 +674,37 @@ function Agenda() {
                   {selectedDateAgendaItems.length > 0 ? (
                     <ul className="agenda-mini-list">
                       {selectedDateAgendaItems.map((item) => (
-                        <li
-                          key={`study-${item.id}`}
-                          className={`agenda-detail-item${item.completed ? ' is-completed' : ''}`}
-                        >
+                        <li key={`study-${item.id}`} className="agenda-detail-item">
                           <div className="agenda-detail-copy">
                             <strong className="agenda-detail-title">{item.eventName}</strong>
                             <span className="agenda-detail-description">
                               {`${item.startTime} - ${item.endTime}${item.subjectName ? ` • ${item.subjectName}` : ''}`}
                             </span>
+                            {item.source === AUTO_TASK_EVENT_SOURCE ? (
+                              <span className="agenda-detail-description">Evento automático da matéria</span>
+                            ) : null}
                           </div>
                           <div className="agenda-detail-actions">
-                            <button
-                              type="button"
-                              className={`agenda-check-button${item.completed ? ' is-completed' : ''}`}
-                              onClick={() => handleToggleAgendaItemCompleted(item.id)}
-                              aria-label={item.completed ? 'Marcar evento como pendente' : 'Marcar evento como concluido'}
-                            >
-                              <CheckIcon />
-                            </button>
-                            <button
-                              type="button"
-                              className="agenda-icon-button"
-                              onClick={() => handleEditAgendaItem(item)}
-                              aria-label="Editar evento"
-                            >
-                              <PencilIcon />
-                            </button>
-                            <button
-                              type="button"
-                              className="subject-remove-button"
-                              onClick={() => handleRemoveAgendaItem(item.id)}
-                              aria-label="Remover evento da agenda"
-                            >
-                              ✕
-                            </button>
+                            {item.source === AUTO_TASK_EVENT_SOURCE ? null : (
+                              <>
+                                <button
+                                  type="button"
+                                  className="agenda-icon-button"
+                                  onClick={() => handleEditAgendaItem(item)}
+                                  aria-label="Editar evento"
+                                >
+                                  <PencilIcon />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="subject-remove-button"
+                                  onClick={() => handleRemoveAgendaItem(item.id)}
+                                  aria-label="Remover evento da agenda"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            )}
                           </div>
                         </li>
                       ))}

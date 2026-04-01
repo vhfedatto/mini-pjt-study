@@ -7,6 +7,8 @@ function PlanManager({
   onSelectPlan,
   onEditPlan,
   onDeletePlan,
+  isRecommendationVisible = false,
+  onToggleRecommendation,
   subjects = [],
   tasks = []
 }) {
@@ -63,6 +65,20 @@ function PlanManager({
 
   return (
     <Card>
+      {cards.length > 0 ? (
+        <div className="plan-card-actions" style={{ marginBottom: '12px' }}>
+          <button
+            type="button"
+            className="plan-action-btn"
+            onClick={onToggleRecommendation}
+          >
+            {isRecommendationVisible
+              ? 'Ocultar 📚 Recomendação de Estudo para Hoje'
+              : 'Mostrar 📚 Recomendação de Estudo para Hoje'}
+          </button>
+        </div>
+      ) : null}
+
       <div className="plan-cards">
         {cards.length === 0 ? (
           <p className="plans-empty">Nenhum plano específico criado.</p>

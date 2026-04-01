@@ -30,6 +30,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
     { key: 'flashcards', label: 'Flashcards' },
     { key: 'important-dates', label: 'Provas' },
     { key: 'progress', label: 'Progresso' },
+    { key: 'ranking', label: 'Ranking' },
   ]
 
   return (
@@ -68,14 +69,24 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
         ))}
       </nav>
 
-      <button
-        type="button"
-        className={`sidebar-settings-button${activePage === 'settings' ? ' sidebar-link-active' : ''}`}
-        onClick={() => setActivePage?.('settings')}
-      >
-        <GearIcon />
-        <span>Configurações</span>
-      </button>
+      <div className="sidebar-bottom-actions">
+        <button
+          type="button"
+          className={`sidebar-settings-button${activePage === 'profile' ? ' sidebar-link-active' : ''}`}
+          onClick={() => setActivePage?.('profile')}
+        >
+          <span>Perfil</span>
+        </button>
+
+        <button
+          type="button"
+          className={`sidebar-settings-button${activePage === 'settings' ? ' sidebar-link-active' : ''}`}
+          onClick={() => setActivePage?.('settings')}
+        >
+          <GearIcon />
+          <span>Configurações</span>
+        </button>
+      </div>
     </aside>
   )
 }
