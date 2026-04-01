@@ -162,7 +162,6 @@ function normalizeAgendaItems(items) {
         subjectName: item.subjectName ?? '',
         eventName: item.eventName ?? item.title ?? '',
         dateKeys: normalizedDateKeys,
-        completed: Boolean(item.completed),
         startTime: item.startTime ?? '',
         endTime: item.endTime ?? '',
         notes: item.notes ?? ''
@@ -193,21 +192,6 @@ function PencilIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.8"
-      />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="m5 12 4.2 4.2L19 6.5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
       />
     </svg>
   )
@@ -443,17 +427,12 @@ function Agenda() {
       repeatWeekDays
     })
 
-    const existingItem = editingAgendaItemId
-      ? agendaItems.find((item) => item.id === editingAgendaItemId)
-      : null
-
     const nextItem = {
       id: editingAgendaItemId ?? Date.now(),
       subjectId: selectedSubject?.id ?? null,
       subjectName: selectedSubject?.name ?? '',
       eventName: trimmedEventName,
       dateKeys: finalDateKeys,
-      completed: existingItem?.completed ?? false,
       startTime,
       endTime,
       notes: trimmedNotes
@@ -487,14 +466,6 @@ function Agenda() {
 
   function handleRemoveAgendaItem(id) {
     setAgendaItems((previous) => previous.filter((item) => item.id !== id))
-  }
-
-  function handleToggleAgendaItemCompleted(id) {
-    setAgendaItems((previous) =>
-      previous.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
-    )
   }
 
   return (
@@ -629,10 +600,7 @@ function Agenda() {
                   {selectedDateAgendaItems.length > 0 ? (
                     <ul className="agenda-mini-list">
                       {selectedDateAgendaItems.map((item) => (
-                        <li
-                          key={`study-${item.id}`}
-                          className={`agenda-detail-item${item.completed ? ' is-completed' : ''}`}
-                        >
+                        <li key={`study-${item.id}`} className="agenda-detail-item">
                           <div className="agenda-detail-copy">
                             <strong className="agenda-detail-title">{item.eventName}</strong>
                             <span className="agenda-detail-description">
@@ -640,14 +608,6 @@ function Agenda() {
                             </span>
                           </div>
                           <div className="agenda-detail-actions">
-                            <button
-                              type="button"
-                              className={`agenda-check-button${item.completed ? ' is-completed' : ''}`}
-                              onClick={() => handleToggleAgendaItemCompleted(item.id)}
-                              aria-label={item.completed ? 'Marcar evento como pendente' : 'Marcar evento como concluido'}
-                            >
-                              <CheckIcon />
-                            </button>
                             <button
                               type="button"
                               className="agenda-icon-button"

@@ -12,13 +12,57 @@ const EXPORT_STORAGE_KEYS = [
   'flashcards'
 ]
 
-function Settings() {
-  // Referência para acionar o input de arquivo sem exibi-lo na interface.
+function Settings({ onLogout }) {
   const importInputRef = useRef(null)
-  // Mensagem de retorno exibida após exportar ou importar um backup.
   const [statusMessage, setStatusMessage] = useState('')
+  const [passwordStatus, setPasswordStatus] = useState('')
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
 
-  // Exporta os dados principais do app em um arquivo JSON.
+  function handlePasswordInputChange(event) {
+    const { name, value } = event.target
+    setPasswordForm((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+    setPasswordStatus('')
+  }
+
+  function handleChangePassword(event) {
+    event.preventDefault()
+
+    const currentPasswordValue = passwordForm.currentPassword.trim()
+    const newPasswordValue = passwordForm.newPassword.trim()
+    const confirmPasswordValue = passwordForm.confirmPassword.trim()
+    const storedPassword = localStorage.getItem('studydash-password')
+
+    if (newPasswordValue.length < 6) {
+      setPasswordStatus('A nova senha precisa ter pelo menos 6 caracteres.')
+      return
+    }
+
+    if (newPasswordValue !== confirmPasswordValue) {
+      setPasswordStatus('A confirmacao nao confere com a nova senha.')
+      return
+    }
+
+    if (storedPassword && currentPasswordValue !== storedPassword) {
+      setPasswordStatus('A senha atual informada esta incorreta.')
+      return
+    }
+
+    localStorage.setItem('studydash-password', newPasswordValue)
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    })
+    setPasswordStatus(storedPassword ? 'Senha alterada com sucesso.' : 'Senha cadastrada com sucesso.')
+  }
+
   function handleExport() {
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -37,12 +81,10 @@ function Settings() {
     setStatusMessage('Backup exportado com sucesso.')
   }
 
-  // Abre o seletor de arquivo para importar um backup.
   function handleOpenImport() {
     importInputRef.current?.click()
   }
 
-  // Lê o arquivo JSON escolhido e restaura os dados no localStorage.
   function handleImport(event) {
     const file = event.target.files?.[0]
     if (!file) return
@@ -83,11 +125,14 @@ function Settings() {
     reader.readAsText(file)
   }
 
+  function handleLogout() {
+    onLogout?.()
+  }
+
   return (
     <section className="dashboard-content">
       <Card>
         <section className="panel-section settings-panel">
-          {/* Título e descrição da área de backup. */}
           <div>
             <h2 className="section-title">Configurações</h2>
             <p className="settings-helper">
@@ -95,7 +140,6 @@ function Settings() {
             </p>
           </div>
 
-          {/* Ações principais para exportar ou importar dados. */}
           <div className="settings-actions">
             <button type="button" className="subject-add-button" onClick={handleExport}>
               Exportar backup JSON
@@ -105,7 +149,6 @@ function Settings() {
             </button>
           </div>
 
-          {/* Input oculto usado para selecionar o arquivo de importação. */}
           <input
             ref={importInputRef}
             type="file"
@@ -114,7 +157,6 @@ function Settings() {
             onChange={handleImport}
           />
 
-          {/* Cards com orientações rápidas sobre o backup. */}
           <div className="settings-card-grid">
             <article className="settings-info-card">
               <h3>O que entra no backup</h3>
@@ -126,7 +168,92 @@ function Settings() {
             </article>
           </div>
 
-          {/* Exibe o resultado da última ação de backup. */}
+          <section className="settings-password-section" aria-labelledby="change-password-title">
+            <div>
+              <h3 id="change-password-title">Alterar senha</h3>
+              <p className="settings-helper">
+                Defina uma senha local para proteger o acesso neste navegador.
+              </p>
+            </div>
+
+            <form className="settings-password-form" onSubmit={handleChangePassword}>
+              <div className="plan-field-group settings-password-field">
+                <label className="plan-field-label" htmlFor="currentPassword">
+                  Senha atual
+                </label>
+                <input
+                  id="currentPassword"
+                  name="currentPassword"
+                  type="password"
+                  className="plan-input"
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha atual"
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordInputChange}
+                />
+              </div>
+
+              <div className="plan-field-group settings-password-field">
+                <label className="plan-field-label" htmlFor="newPassword">
+                  Nova senha
+                </label>
+                <input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  className="plan-input"
+                  autoComplete="new-password"
+                  placeholder="Minimo de 6 caracteres"
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordInputChange}
+                  required
+                />
+              </div>
+
+              <div className="plan-field-group settings-password-field">
+                <label className="plan-field-label" htmlFor="confirmPassword">
+                  Confirmar nova senha
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  className="plan-input"
+                  autoComplete="new-password"
+                  placeholder="Repita a nova senha"
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordInputChange}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="subject-add-button settings-password-submit">
+                Salvar nova senha
+              </button>
+            </form>
+
+            {passwordStatus ? <p className="settings-status">{passwordStatus}</p> : null}
+          </section>
+
+          <section className="settings-password-section" aria-labelledby="session-title">
+            <div>
+              <h3 id="session-title">Sessão</h3>
+              <p className="settings-helper">
+                Encerre sua sessão atual e volte para a tela de login.
+              </p>
+            </div>
+
+            <div className="settings-actions">
+              <button
+                type="button"
+                className="plan-action-btn plan-action-btn-danger"
+                onClick={handleLogout}
+              >
+                Sair
+              </button>
+            </div>
+          </section>
+
           {statusMessage ? <p className="settings-status">{statusMessage}</p> : null}
         </section>
       </Card>

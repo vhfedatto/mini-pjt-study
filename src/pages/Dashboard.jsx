@@ -8,10 +8,8 @@ import PlanManager from '../components/plans/PlanManager'
 import { taskReducer } from '../reducers/taskReducer'
 
 function Dashboard() {
-	// Cor padrão usada quando um plano não tem cor definida.
 	const defaultPlanColor = '#c46b2d'
 
-	// Formata datas para exibição no padrão brasileiro.
 	function formatDate(date) {
 		if (!date) return ''
 
@@ -22,7 +20,6 @@ function Dashboard() {
 		}).format(new Date(`${date}T00:00:00`))
 	}
 
-	// Carrega os planos salvos ou cria um plano inicial.
 	const [plans, setPlans] = useState(() => {
 		const stored =
 			localStorage.getItem('plans') || localStorage.getItem('studyPlans')
@@ -39,24 +36,19 @@ function Dashboard() {
 		]
 	})
 
-	// Carrega as matérias salvas no navegador.
 	const [subjects, setSubjects] = useState(() => {
 		const stored = localStorage.getItem('subjects')
 		return stored ? JSON.parse(stored) : []
 	})
 
-	// Carrega as tarefas salvas e delega alterações ao reducer.
 	const [tasks, dispatch] = useReducer(taskReducer, [], () => {
 		const stored = localStorage.getItem('tasks')
 		return stored ? JSON.parse(stored) : []
 	})
 
-	// Guarda o plano selecionado no filtro atual.
 	const [selectedPlanId, setSelectedPlanId] = useState(null)
-	// Define em qual plano novas matérias e tarefas serão criadas.
 	const planForCreation = selectedPlanId ?? plans[0]?.id ?? null
 
-	// Garante dados mínimos nos itens antigos salvos no localStorage.
 	useEffect(() => {
 		const defaultPlanId = plans[0]?.id
 		if (!defaultPlanId) return
@@ -88,7 +80,6 @@ function Dashboard() {
 		}
 	}, [defaultPlanColor, plans, subjects, tasks])
 
-	// Filtra as matérias pelo plano selecionado.
 	const filteredSubjects = useMemo(
 		() =>
 			selectedPlanId
@@ -97,7 +88,6 @@ function Dashboard() {
 		[subjects, selectedPlanId]
 	)
 
-	// Filtra as tarefas pelo plano selecionado.
 	const filteredTasks = useMemo(
 		() =>
 			selectedPlanId
@@ -106,23 +96,19 @@ function Dashboard() {
 		[tasks, selectedPlanId]
 	)
 
-	// Conta quantas tarefas filtradas ainda estão pendentes.
 	const pendingTasks = useMemo(
 		() => filteredTasks.filter((task) => !task.completed).length,
 		[filteredTasks]
 	)
-	// Conta quantas tarefas filtradas já foram concluídas.
 	const completedTasks = useMemo(
 		() => filteredTasks.filter((task) => task.completed).length,
 		[filteredTasks]
 	)
-	// Calcula o percentual de conclusão das tarefas visíveis.
 	const progressPercent = useMemo(() => {
 		if (filteredTasks.length === 0) return 0
 		return Math.round((completedTasks / filteredTasks.length) * 100)
 	}, [filteredTasks.length, completedTasks])
 
-	// Encontra a próxima tarefa pendente com prazo definido.
 	const nextDeadlineTask = useMemo(() => {
 		const pendingWithDeadline = filteredTasks
 			.filter((task) => !task.completed && task.dueDate)
@@ -131,7 +117,6 @@ function Dashboard() {
 		return pendingWithDeadline[0] ?? null
 	}, [filteredTasks])
 
-	// Localiza a matéria ligada à próxima tarefa com prazo.
 	const nextDeadlineSubject = useMemo(() => {
 		if (!nextDeadlineTask) return null
 
@@ -140,13 +125,11 @@ function Dashboard() {
 		) ?? null
 	}, [filteredSubjects, nextDeadlineTask])
 
-	// Salva a lista de planos sempre que ela mudar.
 	useEffect(() => {
 		localStorage.setItem('plans', JSON.stringify(plans))
 		localStorage.setItem('studyPlans', JSON.stringify(plans))
 	}, [plans])
 
-	// Mantém os planos sincronizados entre abas e componentes.
 	useEffect(() => {
 		const syncPlans = () => {
 			const stored =
@@ -165,24 +148,20 @@ function Dashboard() {
 		}
 	}, [])
 
-	// Salva as matérias sempre que houver alteração.
 	useEffect(() => {
 		localStorage.setItem('subjects', JSON.stringify(subjects))
 	}, [subjects])
 
-	// Salva as tarefas sempre que houver alteração.
 	useEffect(() => {
 		localStorage.setItem('tasks', JSON.stringify(tasks))
 	}, [tasks])
 
-	// Adiciona um novo plano e já deixa ele selecionado.
 	function handleAddPlan(newPlan) {
 		const plan = { id: Date.now(), ...newPlan }
 		setPlans((prev) => [...prev, plan])
 		setSelectedPlanId(plan.id)
 	}
 
-	// Atualiza os dados de um plano existente.
 	function handleEditPlan(planId, changes) {
 		setPlans((prev) =>
 			prev.map((plan) =>
@@ -191,7 +170,6 @@ function Dashboard() {
 		)
 	}
 
-	// Remove um plano da lista e limpa a seleção se necessário.
 	function handleDeletePlan(planId) {
 		setPlans((prev) => prev.filter((p) => p.id !== planId))
 		setSelectedPlanId((prev) => (prev === planId ? null : prev))
@@ -202,7 +180,6 @@ function Dashboard() {
 		<section className="dashboard-content">
 			<Header />
 
-			{/* Exibe os indicadores principais do painel. */}
 			<section className="summary-grid">
 				<SummaryCard
 					title="Matérias ativas"
@@ -249,19 +226,17 @@ function Dashboard() {
 				/>
 			</section>
 
-			{/* Gerencia criação, edição, exclusão e seleção dos planos. */}
-			<PlanManager
-				plans={plans}
-				selectedPlanId={selectedPlanId}
-				onSelectPlan={setSelectedPlanId}
-				onAddPlan={handleAddPlan}
-				onEditPlan={handleEditPlan}
-				onDeletePlan={handleDeletePlan}
-				subjects={subjects}
-				tasks={tasks}
-			/>
+				<PlanManager
+					plans={plans}
+					selectedPlanId={selectedPlanId}
+					onSelectPlan={setSelectedPlanId}
+					onAddPlan={handleAddPlan}
+					onEditPlan={handleEditPlan}
+					onDeletePlan={handleDeletePlan}
+					subjects={subjects}
+					tasks={tasks}
+				/>
 
-			{/* Mostra a lista de matérias e tarefas do plano ativo. */}
 			<section className="split-grid">
 				<SubjectList
 					subjects={subjects}
