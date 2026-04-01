@@ -9,7 +9,8 @@ export function taskReducer(state, action) {
           subjectId: action.payload.subjectId,
           planId: action.payload.planId,
           dueDate: action.payload.dueDate,
-          completed: false
+          completed: false,
+          archived: false
         }
       ]
 
@@ -20,7 +21,11 @@ export function taskReducer(state, action) {
       return state
         .map((task) =>
           task.id === action.payload
-            ? { ...task, completed: !task.completed }
+            ? {
+                ...task,
+                completed: !task.completed,
+                archived: task.completed ? false : task.archived
+              }
             : task
         )
         .sort(
@@ -28,8 +33,25 @@ export function taskReducer(state, action) {
             Number(a.completed) - Number(b.completed) || a.id - b.id
         )
 
+    case 'ARCHIVE_TASK':
+      return state.map((task) =>
+        task.id === action.payload && task.completed
+          ? { ...task, archived: true }
+          : task
+      )
+
+    case 'UNARCHIVE_TASK':
+      return state.map((task) =>
+        task.id === action.payload
+          ? { ...task, archived: false, completed: true }
+          : task
+      )
+
     case 'HYDRATE':
-      return action.payload
+      return action.payload.map((task) => ({
+        ...task,
+        archived: Boolean(task.archived)
+      }))
 
     default:
       return state

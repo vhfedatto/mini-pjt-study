@@ -1,12 +1,51 @@
 import { useCallback, useState } from 'react'
 import Card from '../ui/Card'
 
-function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, activePlanId, plans = [] }) {
+function ArchiveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M4 7.5h16v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-11Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M3 5.5A1.5 1.5 0 0 1 4.5 4h15A1.5 1.5 0 0 1 21 5.5v1A1.5 1.5 0 0 1 19.5 8h-15A1.5 1.5 0 0 1 3 6.5v-1Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M10 12h4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  )
+}
+
+function TaskList({
+  tasks,
+  dispatch,
+  pendingTasks,
+  completedTasks,
+  archivedTasks = 0,
+  subjects,
+  activePlanId,
+  plans = []
+}) {
   const [newTask, setNewTask] = useState('')
   const [selectedSubjectId, setSelectedSubjectId] = useState('')
   const [dueDate, setDueDate] = useState('')
   const subjectOptions = subjects ?? []
-  const today = new Date().toISOString().split('T')[0]
   const subjectNameCounts = subjectOptions.reduce((acc, subject) => {
     const key = subject.name.trim().toLowerCase()
     acc[key] = (acc[key] ?? 0) + 1
@@ -42,10 +81,6 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
       alert('Selecione um prazo para a tarefa.')
       return
     }
-    if (dueDate < today) {
-      alert('O prazo não pode ser anterior ao dia de hoje.')
-      return
-    }
     if (!resolvedPlanId) {
       alert('Nao foi possivel identificar o plano desta materia.')
       return
@@ -64,7 +99,7 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
     setNewTask('')
     setSelectedSubjectId('')
     setDueDate('')
-  }, [newTask, selectedSubjectId, dueDate, today, activePlanId, dispatch, subjectOptions])
+  }, [newTask, selectedSubjectId, dueDate, activePlanId, dispatch, subjectOptions])
 
   return (
     <Card>
@@ -74,6 +109,10 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
         <div className="task-meta">
           <span className="pill success">✅ Concluídas: {completedTasks}</span>
           <span className="pill info">⏳ Pendentes: {pendingTasks}</span>
+          <span className="pill warning">
+            <ArchiveIcon />
+            <span>Arquivadas: {archivedTasks}</span>
+          </span>
         </div>
         <div className="subject-form">
           <select
@@ -110,7 +149,6 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
             className="subject-input"
             type="date"
             value={dueDate}
-            min={today}
             onChange={(e) => setDueDate(e.target.value)}
           />
 
@@ -122,14 +160,15 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
         <ul className="subject-list task-list">
           {tasks.map((task) => {
             const subject = subjectOptions.find((item) => item.id === task.subjectId)
+            const isCompleted = task.completed
 
             return (
               <li
-                className={`subject-item task-item ${task.completed ? 'completed' : ''}`}
+                className={`subject-item task-item ${isCompleted ? 'completed' : ''}`}
                 key={task.id}
               >
-                <div>
-                  <span className={`task-text ${task.completed ? 'done' : ''}`}>
+                <div className="task-item-content">
+                  <span className={`task-text ${isCompleted ? 'done' : ''}`}>
                     {task.text}
                   </span>
                   <p className="task-subject-label">
@@ -142,25 +181,47 @@ function TaskList({ tasks, dispatch, pendingTasks, completedTasks, subjects, act
                   ) : null}
                 </div>
 
-                <div className="chip-group">
-                  <button
-                    className="subject-remove-button task-check-button"
-                    onClick={() =>
-                      dispatch({ type: 'TOGGLE_TASK', payload: task.id })
-                    }
-                  >
-                    ✔
-                  </button>
-
-                  <button
-                    className="subject-remove-button"
-                    onClick={() =>
-                      dispatch({ type: 'REMOVE_TASK', payload: task.id })
-                    }
-                  >
-                    ✕
-                  </button>
-                </div>
+                {isCompleted ? (
+                  <div className="task-hover-actions">
+                    <button
+                      className="subject-remove-button task-check-button task-hover-button"
+                      onClick={() =>
+                        dispatch({ type: 'TOGGLE_TASK', payload: task.id })
+                      }
+                      aria-label="Marcar tarefa como pendente"
+                    >
+                      ✔
+                    </button>
+                    <button
+                      className="subject-remove-button task-archive-button task-hover-button"
+                      onClick={() =>
+                        dispatch({ type: 'ARCHIVE_TASK', payload: task.id })
+                      }
+                      aria-label="Arquivar tarefa concluída"
+                    >
+                      <ArchiveIcon />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="chip-group">
+                    <button
+                      className="subject-remove-button task-check-button"
+                      onClick={() =>
+                        dispatch({ type: 'TOGGLE_TASK', payload: task.id })
+                      }
+                    >
+                      ✔
+                    </button>
+                    <button
+                      className="subject-remove-button"
+                      onClick={() =>
+                        dispatch({ type: 'REMOVE_TASK', payload: task.id })
+                      }
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </li>
             )
           })}

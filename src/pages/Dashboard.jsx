@@ -103,26 +103,35 @@ function Dashboard() {
 		[tasks, selectedPlanId]
 	)
 
-	const pendingTasks = useMemo(
-		() => filteredTasks.filter((task) => !task.completed).length,
+	const visibleTasks = useMemo(
+		() => filteredTasks.filter((task) => !task.archived),
 		[filteredTasks]
+	)
+	const archivedTasks = useMemo(
+		() => filteredTasks.filter((task) => task.archived).length,
+		[filteredTasks]
+	)
+
+	const pendingTasks = useMemo(
+		() => visibleTasks.filter((task) => !task.completed).length,
+		[visibleTasks]
 	)
 	const completedTasks = useMemo(
-		() => filteredTasks.filter((task) => task.completed).length,
-		[filteredTasks]
+		() => visibleTasks.filter((task) => task.completed).length,
+		[visibleTasks]
 	)
 	const progressPercent = useMemo(() => {
-		if (filteredTasks.length === 0) return 0
-		return Math.round((completedTasks / filteredTasks.length) * 100)
-	}, [filteredTasks.length, completedTasks])
+		if (visibleTasks.length === 0) return 0
+		return Math.round((completedTasks / visibleTasks.length) * 100)
+	}, [visibleTasks.length, completedTasks])
 
 	const nextDeadlineTask = useMemo(() => {
-		const pendingWithDeadline = filteredTasks
+		const pendingWithDeadline = visibleTasks
 			.filter((task) => !task.completed && task.dueDate)
 			.sort((a, b) => a.dueDate.localeCompare(b.dueDate))
 
 		return pendingWithDeadline[0] ?? null
-	}, [filteredTasks])
+	}, [visibleTasks])
 
 	const nextDeadlineSubject = useMemo(() => {
 		if (!nextDeadlineTask) return null
@@ -266,10 +275,11 @@ function Dashboard() {
 					activePlanId={planForCreation}
 				/>
 				<TaskList
-					tasks={filteredTasks}
+					tasks={visibleTasks}
 					dispatch={dispatch}
 					pendingTasks={pendingTasks}
 					completedTasks={completedTasks}
+					archivedTasks={archivedTasks}
 					subjects={filteredSubjects}
 					activePlanId={planForCreation}
 					plans={plans}
