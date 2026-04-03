@@ -11,6 +11,8 @@ function SubjectList({
   activePlanId
 }) {
   const [newSubject, setNewSubject] = useState('')
+  const [draggedSubjectId, setDraggedSubjectId] = useState(null)
+  const [dragOverSubjectId, setDragOverSubjectId] = useState(null)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -63,6 +65,62 @@ function SubjectList({
     setSubjects((prev) => prev.filter((subject) => subject.id !== id))
   }
 
+  const handleDragStart = useCallback((subjectId) => {
+    setDraggedSubjectId(subjectId)
+    setDragOverSubjectId(subjectId)
+  }, [])
+
+  const handleDragOver = useCallback((event, subjectId) => {
+    event.preventDefault()
+
+    if (dragOverSubjectId !== subjectId) {
+      setDragOverSubjectId(subjectId)
+    }
+  }, [dragOverSubjectId])
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedSubjectId(null)
+    setDragOverSubjectId(null)
+  }, [])
+
+  const handleDrop = useCallback((event, targetSubjectId) => {
+    event.preventDefault()
+
+    if (!activePlanId || !draggedSubjectId || draggedSubjectId === targetSubjectId) {
+      handleDragEnd()
+      return
+    }
+
+    const orderedPlanSubjects = visibleSubjects.filter(
+      (subject) => subject.planId === activePlanId
+    )
+    const draggedIndex = orderedPlanSubjects.findIndex(
+      (subject) => subject.id === draggedSubjectId
+    )
+    const targetIndex = orderedPlanSubjects.findIndex(
+      (subject) => subject.id === targetSubjectId
+    )
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      handleDragEnd()
+      return
+    }
+
+    const reorderedPlanSubjects = [...orderedPlanSubjects]
+    const [movedSubject] = reorderedPlanSubjects.splice(draggedIndex, 1)
+    reorderedPlanSubjects.splice(targetIndex, 0, movedSubject)
+
+    setSubjects((prev) => {
+      const nextPlanSubjects = [...reorderedPlanSubjects]
+
+      return prev.map((subject) =>
+        subject.planId === activePlanId ? nextPlanSubjects.shift() : subject
+      )
+    })
+
+    handleDragEnd()
+  }, [activePlanId, draggedSubjectId, handleDragEnd, setSubjects, visibleSubjects])
+
   return (
     <Card>
       <section className="panel-section subject-section">
@@ -103,10 +161,21 @@ function SubjectList({
               const completedTasksForSubject = tasks.filter(
                 (task) => task.subjectId === subject.id && task.completed
               ).length
+              const isDragging = draggedSubjectId === subject.id
+              const isDropTarget =
+                dragOverSubjectId === subject.id && draggedSubjectId !== subject.id
 
               return (
-                <li className="subject-item" key={subject.id}>
-                  <div>
+                <li
+                  className={`subject-item ${activePlanId ? 'subject-item-draggable' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
+                  key={subject.id}
+                  draggable={Boolean(activePlanId)}
+                  onDragStart={() => handleDragStart(subject.id)}
+                  onDragOver={(event) => handleDragOver(event, subject.id)}
+                  onDrop={(event) => handleDrop(event, subject.id)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="subject-item-main">
                     <div className="subject-name-row">
                       <span
                         className="plan-color-dot"
