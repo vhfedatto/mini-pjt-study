@@ -15,7 +15,9 @@ const BACKUP_STORAGE_KEYS = [
   'studydash-user',
   'studydash-password',
   'studydash-session',
-  'theme'
+  'theme',
+  'question-training-resume',
+  'question-training-answer-history-reset-v1'
 ]
 
 function readParsedStorage(key, fallback) {
@@ -93,7 +95,7 @@ function createBackupPayload() {
   return {
     exportedAt: new Date().toISOString(),
     app: 'study-dashboard',
-    version: 2,
+    version: 3,
     rawStorage: Object.fromEntries(BACKUP_STORAGE_KEYS.map((key) => [key, localStorage.getItem(key)])),
     data: {
       profile: {
@@ -275,7 +277,7 @@ function Settings({ onLogout }) {
           <div className="settings-card-grid">
             <article className="settings-info-card">
               <h3>O que entra no backup</h3>
-              <p>Cadernos com questões, flashcards, perfil, senha local, sessão, matérias, tarefas, progresso, agenda, provas, competições e preferências.</p>
+              <p>Cadernos com questões, tentativas, estatísticas, retomada de treino, flashcards, perfil, senha local, sessão, matérias, tarefas, progresso, agenda, provas, competições e preferências.</p>
             </article>
             <article className="settings-info-card">
               <h3>Como importar</h3>

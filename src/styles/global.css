@@ -3349,6 +3349,17 @@ button {
   background: rgba(140, 29, 24, 0.08);
 }
 
+.notebook-question-modal-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notebook-delete-btn-compact {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
 .notebook-description-input,
 .notebook-textarea-lg,
 .notebook-textarea-md {
@@ -3448,6 +3459,126 @@ button {
 
 .notebook-train-button:hover {
   background: linear-gradient(180deg, #47bb71, #2f9858);
+}
+
+.notebook-report-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notebook-report-modal {
+  width: min(920px, 100%);
+  max-height: min(88vh, 920px);
+  overflow-y: auto;
+}
+
+.notebook-report-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.notebook-report-stat-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--panel-muted);
+}
+
+.notebook-report-stat-card span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.notebook-report-stat-card strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.notebook-report-list {
+  display: grid;
+  gap: 14px;
+}
+
+.notebook-report-item {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 88%, white 12%);
+}
+
+.notebook-report-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.notebook-report-item-header h3 {
+  margin: 0;
+}
+
+.notebook-report-item-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+
+.notebook-report-score {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.notebook-report-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.notebook-report-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #8c1d18;
+  border-color: rgba(140, 29, 24, 0.28);
+  background: rgba(140, 29, 24, 0.08);
+}
+
+.notebook-report-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.notebook-report-columns div {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.notebook-report-columns h4 {
+  margin: 0 0 8px;
+  font-size: 0.96rem;
+}
+
+.notebook-report-columns p {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.7;
 }
 
 .question-card {
@@ -5152,6 +5283,10 @@ button {
   .question-training-difficulty-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .notebook-report-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 750px) {
@@ -5231,5 +5366,15 @@ button {
 
   .question-training-summary-stats {
     grid-template-columns: 1fr;
+  }
+
+  .notebook-report-stats,
+  .notebook-report-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .notebook-report-item-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

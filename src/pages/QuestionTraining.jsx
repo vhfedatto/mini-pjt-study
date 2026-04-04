@@ -4,6 +4,7 @@ const KEY = 'question-notebooks'
 const OPT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 const SESSION_KEY = 'question-training-resume'
 const RESET_KEY = 'question-training-answer-history-reset-v1'
+const DIREITOS_HUMANOS_RESET_KEY = 'question-training-reset-direitos-humanos-v1'
 
 const DIFFICULTIES = [
   'Muito Difícil',
@@ -71,6 +72,45 @@ function readNotebooks() {
 
 function writeNotebooks(notebooks) {
   window.localStorage.setItem(KEY, JSON.stringify(notebooks))
+}
+
+function resetDireitosHumanosProgressOnce() {
+  if (window.localStorage.getItem(DIREITOS_HUMANOS_RESET_KEY) === 'done') return
+
+  try {
+    const notebooks = readNotebooks()
+    const updated = notebooks.map((item) => {
+      if ((item.name || '').trim().toLowerCase() !== 'direitos humanos') return item
+
+      const orderedQuestions = Array.isArray(item.questions)
+        ? [...item.questions].sort((left, right) => (left.createdAt ?? left.id ?? 0) - (right.createdAt ?? right.id ?? 0))
+        : []
+
+      return {
+        ...item,
+        updatedAt: Date.now(),
+        attempts: [],
+        questions: orderedQuestions.map(({ answerHistory, lastAnswerLabel, lastDifficulty, lastReviewedAt, correctCount, wrongCount, ...question }) => ({
+          ...question,
+          correctCount: 0,
+          wrongCount: 0
+        }))
+      }
+    })
+
+    writeNotebooks(updated)
+
+    const sessions = readResumeSessions()
+    const targetNotebook = updated.find((item) => (item.name || '').trim().toLowerCase() === 'direitos humanos')
+    if (targetNotebook) {
+      delete sessions[String(targetNotebook.id)]
+      writeResumeSessions(sessions)
+    }
+
+    window.localStorage.setItem(DIREITOS_HUMANOS_RESET_KEY, 'done')
+  } catch {
+    // Ignore malformed local data and leave current state untouched.
+  }
 }
 
 function readResumeSessions() {
@@ -146,8 +186,28 @@ function getQuestionWrongRate(question) {
   return (question.wrongCount ?? 0) / total
 }
 
+function getDifficultyWeight(question) {
+  switch (question.lastDifficulty) {
+    case 'Muito Difícil':
+      return 5
+    case 'Difícil':
+      return 4
+    case 'Neutro':
+      return 3
+    case 'Fácil':
+      return 2
+    case 'Muito fácil':
+      return 1
+    default:
+      return 0
+  }
+}
+
 function sortQuestionsForTraining(questions) {
   return [...questions].sort((left, right) => {
+    const difficultyDiff = getDifficultyWeight(right) - getDifficultyWeight(left)
+    if (difficultyDiff !== 0) return difficultyDiff
+
     const wrongRateDiff = getQuestionWrongRate(right) - getQuestionWrongRate(left)
     if (wrongRateDiff !== 0) return wrongRateDiff
 
@@ -158,16 +218,48 @@ function sortQuestionsForTraining(questions) {
   })
 }
 
-function commitTrainingSession(notebookId, sessionState) {
+function commitTrainingSession(notebookId, sessionState, orderedQuestions) {
   const notebooks = readNotebooks()
   const updatedAt = Date.now()
 
   const updated = notebooks.map((notebook) => {
     if (notebook.id !== notebookId) return notebook
 
+    const notebookQuestionNumbers = new Map(
+      (notebook.questions || []).map((question, index) => [question.id, index + 1])
+    )
+
+    const attemptQuestions = orderedQuestions.map((question) => {
+      const questionSession = sessionState[question.id] ?? createEmptyQuestionSession()
+      const markedIndex = questionSession.selectedAlternative
+        ? questionSession.alternativeOrder.indexOf(questionSession.selectedAlternative)
+        : -1
+
+      return {
+        questionId: question.id,
+        number: notebookQuestionNumbers.get(question.id) ?? 0,
+        markedAlternative: markedIndex >= 0 ? OPT[markedIndex] : '-',
+        selectedAlternativeValue: questionSession.selectedAlternative ?? null,
+        isCorrect: Boolean(questionSession.submitted && questionSession.isCorrect),
+        answered: Boolean(questionSession.submitted),
+        difficulty: questionSession.difficulty ?? null
+      }
+    })
+
+    const attempt = {
+      id: updatedAt,
+      number: (notebook.attempts?.length ?? 0) + 1,
+      completedAt: updatedAt,
+      totalQuestions: orderedQuestions.length,
+      correctQuestions: attemptQuestions.filter((item) => item.answered && item.isCorrect).map((item) => item.number),
+      wrongQuestions: attemptQuestions.filter((item) => item.answered && !item.isCorrect).map((item) => item.number),
+      questions: attemptQuestions
+    }
+
     return {
       ...notebook,
       updatedAt,
+      attempts: [...(notebook.attempts ?? []), attempt],
       questions: (notebook.questions || []).map((question) => {
         const questionSession = sessionState[question.id]
         if (!questionSession?.submitted || !questionSession.selectedAlternative) return question
@@ -225,6 +317,7 @@ function QuestionTraining({ notebookId, onExit }) {
   const [isExitPromptOpen, setIsExitPromptOpen] = useState(false)
 
   useEffect(() => {
+    resetDireitosHumanosProgressOnce()
     ensureAnswerHistoryResetOnce()
     const nextNotebooks = readNotebooks()
     const resume = readResumeSession(notebookId)
@@ -382,10 +475,11 @@ function QuestionTraining({ notebookId, onExit }) {
 
   function toggleCutAlternative(event, label) {
     event.stopPropagation()
-    if (!currentQuestion || submitted || selectedAlternative === label) return
+    if (!currentQuestion || submitted) return
 
     updateQuestionSession(currentQuestion.id, (previous) => ({
       ...previous,
+      selectedAlternative: previous.selectedAlternative === label ? null : previous.selectedAlternative,
       cutAlternatives: previous.cutAlternatives.includes(label)
         ? previous.cutAlternatives.filter((item) => item !== label)
         : [...previous.cutAlternatives, label]
@@ -413,16 +507,38 @@ function QuestionTraining({ notebookId, onExit }) {
 
   function handleDifficultyChoice(difficulty) {
     if (!currentQuestion || !submitted) return
+    const nextSessionState = {
+      ...sessionState,
+      [currentQuestion.id]: {
+        ...currentSession,
+        difficulty
+      }
+    }
 
     updateQuestionSession(currentQuestion.id, (previous) => ({
       ...previous,
       difficulty
     }))
 
-    setCurrentIndex((prev) => {
-      const nextIndex = prev + 1
-      return nextIndex >= questions.length ? questions.length : nextIndex
-    })
+    const isLastQuestion = currentIndex === questions.length - 1
+    const hasAnsweredQuestionAhead = questions
+      .slice(currentIndex + 1)
+      .some((question) => nextSessionState[question.id]?.submitted)
+
+    if (isLastQuestion || hasAnsweredQuestionAhead) {
+      const nextUnansweredIndex = questions.findIndex((question, index) =>
+        index > currentIndex && !nextSessionState[question.id]?.submitted
+      )
+
+      if (nextUnansweredIndex !== -1) {
+        setCurrentIndex(nextUnansweredIndex)
+      } else {
+        const firstUnansweredIndex = questions.findIndex((question) => !nextSessionState[question.id]?.submitted)
+        setCurrentIndex(firstUnansweredIndex === -1 ? questions.length : firstUnansweredIndex)
+      }
+    } else {
+      setCurrentIndex((prev) => prev + 1)
+    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -463,7 +579,7 @@ function QuestionTraining({ notebookId, onExit }) {
   }
 
   function handleCommitAndExit() {
-    commitTrainingSession(notebook.id, sessionState)
+    commitTrainingSession(notebook.id, sessionState, questions)
     clearResumeSession(notebook.id)
     refreshNotebooks()
     setIsExitPromptOpen(false)
@@ -661,7 +777,6 @@ function QuestionTraining({ notebookId, onExit }) {
                           type="button"
                           className={`question-training-cut-action${isCut ? ' is-active' : ''}`}
                           onClick={(event) => toggleCutAlternative(event, alternative.label)}
-                          disabled={selectedAlternative === alternative.label}
                           aria-label={isCut ? `Restaurar alternativa ${alternative.displayLabel}` : `Cortar alternativa ${alternative.displayLabel}`}
                         >
                           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
