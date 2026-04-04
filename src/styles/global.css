@@ -2940,6 +2940,7 @@ button {
 
 .notebooks-layout {
   grid-template-columns: minmax(320px, 1.1fr) minmax(260px, 0.9fr);
+  column-gap: 32px;
 }
 
 .notebooks-library-layout,
@@ -2967,7 +2968,7 @@ button {
 .notebooks-shelf,
 .question-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -2997,6 +2998,25 @@ button {
   margin-top: auto;
   display: flex;
   justify-content: flex-end;
+}
+
+.question-card-draggable {
+  cursor: grab;
+  transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.question-card-draggable:active {
+  cursor: grabbing;
+}
+
+.question-card.is-dragging {
+  opacity: 0.72;
+  transform: rotate(1deg) scale(0.985);
+}
+
+.question-card.is-drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
 }
 
 .question-card-index {
@@ -3034,6 +3054,23 @@ button {
 .notebook-book:hover {
   transform: translateY(-4px) rotate(-0.5deg);
   box-shadow: 0 24px 38px rgba(20, 18, 14, 0.18);
+}
+
+.notebook-book-draggable {
+  cursor: grab;
+}
+
+.notebook-book-draggable:active {
+  cursor: grabbing;
+}
+
+.notebook-book.is-dragging {
+  opacity: 0.7;
+  transform: rotate(1deg) scale(0.985);
+}
+
+.notebook-book.is-drop-target {
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 24px 38px rgba(20, 18, 14, 0.18);
 }
 
 .notebook-book--terracota { background: linear-gradient(165deg, #7a3e2f, #5b2418 72%); }
@@ -3163,6 +3200,7 @@ button {
   display: grid;
   align-content: start;
   gap: 12px;
+  margin-left: 8px;
 }
 
 .notebook-preview-panel > .notebook-book-topline {
@@ -3299,7 +3337,11 @@ button {
 }
 
 .notebook-textarea-lg {
-  min-height: 180px;
+  min-height: 56px;
+}
+
+.notebook-textarea-autogrow {
+  overflow: hidden;
 }
 
 .notebook-textarea-md {
@@ -3391,17 +3433,20 @@ button {
 
 .question-card-add {
   border-style: dashed;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.18s ease;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-muted) 78%, #d8c6a8 22%), color-mix(in srgb, var(--panel) 88%, #b69f7d 12%));
+  text-align: center;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
 }
 
 .question-card-add:hover,
 .question-card-add.is-active {
   transform: translateY(-2px);
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 42%, var(--panel) 58%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 48%, white 52%), color-mix(in srgb, var(--panel) 84%, #d9bf92 16%));
+  box-shadow: 0 14px 28px rgba(196, 107, 45, 0.14);
 }
 
 .question-card-plus {
@@ -3410,11 +3455,13 @@ button {
   justify-content: center;
   width: 42px;
   height: 42px;
+  margin: 0 auto 16px;
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-strong);
   font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .question-card-statement {
@@ -3464,10 +3511,23 @@ button {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-strong);
+  border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.notebook-alternative-label:hover {
+  transform: translateY(-1px);
+}
+
+.notebook-alternative-label.is-correct {
+  background: #2e8f53;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(46, 143, 83, 0.18);
 }
 
 .agenda-layout {
@@ -3831,6 +3891,11 @@ button {
   .notebooks-layout {
     grid-template-columns: 1fr;
   }
+
+  .notebooks-shelf,
+  .question-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1100px) {
@@ -3857,6 +3922,11 @@ button {
 }
 
 @media (max-width: 768px) {
+  .notebooks-shelf,
+  .question-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
   .important-dates-list {
     grid-template-columns: 1fr;
   }

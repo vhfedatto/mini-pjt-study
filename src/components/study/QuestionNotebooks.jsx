@@ -72,6 +72,10 @@ function QuestionNotebooks() {
   const [editForm, setEditForm] = useState(emptyNotebook)
   const [editingQuestionId, setEditingQuestionId] = useState(null)
   const [editingQuestionForm, setEditingQuestionForm] = useState(emptyQuestion)
+  const [draggedNotebookId, setDraggedNotebookId] = useState(null)
+  const [dragOverNotebookId, setDragOverNotebookId] = useState(null)
+  const [draggedQuestionId, setDraggedQuestionId] = useState(null)
+  const [dragOverQuestionId, setDragOverQuestionId] = useState(null)
 
   useEffect(() => { localStorage.setItem(KEY, JSON.stringify(notebooks)) }, [notebooks])
 
@@ -162,6 +166,11 @@ function QuestionNotebooks() {
   }
   function changeAlt(i, value) { setQuestionForm((p) => ({ ...p, alternatives: p.alternatives.map((a, idx) => idx === i ? value : a) })) }
 
+  function autoResizeTextarea(event) {
+    event.currentTarget.style.height = 'auto'
+    event.currentTarget.style.height = `${event.currentTarget.scrollHeight}px`
+  }
+
   function addQuestion(e) {
     e.preventDefault()
     if (!selected) return
@@ -179,6 +188,8 @@ function QuestionNotebooks() {
       statement,
       supportText: questionForm.supportText.trim(),
       correctAlternative: questionForm.correctAlternative,
+      correctCount: 0,
+      wrongCount: 0,
       alternatives: alternatives.map((text, i) => ({ label: OPT[i], text })),
       createdAt: now
     }
@@ -225,12 +236,94 @@ function QuestionNotebooks() {
                 statement,
                 supportText: editingQuestionForm.supportText.trim(),
                 correctAlternative: editingQuestionForm.correctAlternative,
+                correctCount: question.correctCount ?? 0,
+                wrongCount: question.wrongCount ?? 0,
                 alternatives: alternatives.map((text, i) => ({ label: OPT[i], text }))
               }
             : question)
         }
       : notebook))
     closeQuestionEditor()
+  }
+
+  function handleQuestionDragStart(questionId) {
+    setDraggedQuestionId(questionId)
+    setDragOverQuestionId(questionId)
+  }
+
+  function handleQuestionDragOver(event, questionId) {
+    event.preventDefault()
+    if (dragOverQuestionId !== questionId) setDragOverQuestionId(questionId)
+  }
+
+  function handleQuestionDragEnd() {
+    setDraggedQuestionId(null)
+    setDragOverQuestionId(null)
+  }
+
+  function handleQuestionDrop(event, targetQuestionId) {
+    event.preventDefault()
+    if (!selected || !draggedQuestionId || draggedQuestionId === targetQuestionId) {
+      handleQuestionDragEnd()
+      return
+    }
+
+    const draggedIndex = selected.questions.findIndex((question) => question.id === draggedQuestionId)
+    const targetIndex = selected.questions.findIndex((question) => question.id === targetQuestionId)
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      handleQuestionDragEnd()
+      return
+    }
+
+    const reorderedQuestions = [...selected.questions]
+    const [movedQuestion] = reorderedQuestions.splice(draggedIndex, 1)
+    reorderedQuestions.splice(targetIndex, 0, movedQuestion)
+
+    setNotebooks((prev) => prev.map((notebook) =>
+      notebook.id === selected.id
+        ? { ...notebook, updatedAt: Date.now(), questions: reorderedQuestions }
+        : notebook
+    ))
+
+    handleQuestionDragEnd()
+  }
+
+  function handleNotebookDragStart(notebookId) {
+    setDraggedNotebookId(notebookId)
+    setDragOverNotebookId(notebookId)
+  }
+
+  function handleNotebookDragOver(event, notebookId) {
+    event.preventDefault()
+    if (dragOverNotebookId !== notebookId) setDragOverNotebookId(notebookId)
+  }
+
+  function handleNotebookDragEnd() {
+    setDraggedNotebookId(null)
+    setDragOverNotebookId(null)
+  }
+
+  function handleNotebookDrop(event, targetNotebookId) {
+    event.preventDefault()
+    if (!draggedNotebookId || draggedNotebookId === targetNotebookId) {
+      handleNotebookDragEnd()
+      return
+    }
+
+    const draggedIndex = notebooks.findIndex((notebook) => notebook.id === draggedNotebookId)
+    const targetIndex = notebooks.findIndex((notebook) => notebook.id === targetNotebookId)
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      handleNotebookDragEnd()
+      return
+    }
+
+    const reorderedNotebooks = [...notebooks]
+    const [movedNotebook] = reorderedNotebooks.splice(draggedIndex, 1)
+    reorderedNotebooks.splice(targetIndex, 0, movedNotebook)
+    setNotebooks(reorderedNotebooks)
+    handleNotebookDragEnd()
   }
 
   return (
@@ -247,7 +340,7 @@ function QuestionNotebooks() {
           <div className="notebooks-library-actions"><button type="button" className={`plan-action-btn${shelfEdit ? ' is-active' : ''}`} onClick={() => setShelfEdit((p) => !p)}>{shelfEdit ? 'Concluir edição' : 'Editar estante'}</button></div>
         </div>
         <div className="notebooks-shelf">
-          {notebooks.map((n) => <button key={n.id} type="button" className={`notebook-book notebook-book--${n.color}`} onClick={() => shelfEdit ? openEditor(n) : openDetail(n.id)}>
+          {notebooks.map((n) => <button key={n.id} type="button" className={`notebook-book notebook-book--${n.color} notebook-book-draggable ${draggedNotebookId === n.id ? 'is-dragging' : ''} ${dragOverNotebookId === n.id && draggedNotebookId !== n.id ? 'is-drop-target' : ''}`} draggable onDragStart={() => handleNotebookDragStart(n.id)} onDragOver={(event) => handleNotebookDragOver(event, n.id)} onDrop={(event) => handleNotebookDrop(event, n.id)} onDragEnd={handleNotebookDragEnd} onClick={() => shelfEdit ? openEditor(n) : openDetail(n.id)}>
             <span className="notebook-book-spine" aria-hidden="true" />
             <span className="notebook-book-topline">{shelfEdit ? 'Editar caderno' : 'Caderno'}</span>
             <strong>{n.name}</strong>
@@ -279,18 +372,17 @@ function QuestionNotebooks() {
 
       {view === 'detail' && selected ? <section className="notebook-page-layout">
         <Card><section className="panel-section"><div className={`notebook-detail-banner notebook-detail-banner--${selected.color}`} aria-hidden="true" /><div className="notebook-page-header"><div><button type="button" className="notebook-back-button" onClick={goLibrary}><span className="notebook-inline-icon"><ArrowLeftIcon /></span><span>Voltar para a estante</span></button><div className="notebook-title-row"><h2 className="section-title">{selected.name}</h2>{splitTags(selected.tag).length > 0 ? <div className="notebook-title-tags">{splitTags(selected.tag).map((tag) => <span key={tag} className="notebook-title-tag">{tag}</span>)}</div> : null}</div><p className="flashcards-helper">{selected.description || 'Adicione questões e use este caderno como base para os treinos futuros.'}</p></div><div className="notebook-page-actions"><button type="button" className="subject-add-button notebook-train-button" onClick={() => alert('O treinamento deste caderno será implementado posteriormente.')}><span className="notebook-inline-icon"><PlayIcon /></span><span>Iniciar treinamento</span></button></div></div></section></Card>
-        <Card><section className="panel-section"><div className="notebook-section-heading"><div><h3 className="section-title">Questões do caderno</h3><p className="flashcards-helper">Veja rapidamente o que já foi salvo e use o primeiro card para adicionar novas questões.</p></div></div>
-          <div className="question-cards-grid"><button type="button" className={`question-card question-card-add${questionOpen ? ' is-active' : ''}`} onClick={() => setQuestionOpen(true)}><span className="question-card-plus">+</span><strong>Adicionar nova questão</strong><p>Abra o formulário e cadastre banca, ano, enunciado, texto de apoio e alternativas.</p></button>{selected.questions.map((q, i) => <article key={q.id} className="question-card"><span className="question-card-index">Questão {i + 1}</span><div className="flashcard-tags"><span className="pill info">{q.bank}</span><span className="pill">{q.year}</span><span className="pill success">{q.alternatives.length} alternativas</span></div><p className="question-card-statement">{short(q.statement, 180)}</p>{q.supportText ? <p className="question-card-support">{short(q.supportText, 120)}</p> : <p className="question-card-support">Sem texto de apoio.</p>}<div className="question-card-actions"><button type="button" className="plan-action-btn" onClick={() => openQuestionEditor(q)}>Editar questão</button></div></article>)}</div>
+        <Card><section className="panel-section"><div className="notebook-section-heading"><div><h3 className="section-title">Questões do caderno</h3><p className="flashcards-helper">Veja as suas questões ou use o último card para adicionar novas.</p></div></div>
+          <div className="question-cards-grid">{selected.questions.map((q, i) => <article key={q.id} className={`question-card question-card-draggable ${draggedQuestionId === q.id ? 'is-dragging' : ''} ${dragOverQuestionId === q.id && draggedQuestionId !== q.id ? 'is-drop-target' : ''}`} draggable onDragStart={() => handleQuestionDragStart(q.id)} onDragOver={(event) => handleQuestionDragOver(event, q.id)} onDrop={(event) => handleQuestionDrop(event, q.id)} onDragEnd={handleQuestionDragEnd}><span className="question-card-index">Questão {i + 1}</span><div className="flashcard-tags"><span className="pill info">{q.bank}</span><span className="pill">{q.year}</span><span className="pill success">{q.correctCount ?? 0} acertos</span></div><p className="question-card-statement">{short(q.statement, 180)}</p>{q.supportText ? <p className="question-card-support">{short(q.supportText, 120)}</p> : <p className="question-card-support">Sem texto de apoio.</p>}<div className="question-card-actions"><button type="button" className="plan-action-btn" onClick={() => openQuestionEditor(q)}>Editar questão</button></div></article>)}<button type="button" className={`question-card question-card-add${questionOpen ? ' is-active' : ''}`} onClick={() => setQuestionOpen(true)}><span className="question-card-plus">+</span><strong>Adicionar nova questão</strong><p>Abra o formulário e cadastre banca, ano, enunciado, texto de apoio e alternativas.</p></button></div>
           {selected.questions.length === 0 ? <p className="empty-message">Este caderno ainda está vazio. O card de adição já está disponível acima para começar o cadastro.</p> : null}
         </section></Card>
         {questionOpen ? <Card><section className="panel-section"><h2 className="section-title">Adicionar questão</h2><p className="flashcards-helper">Cadastre a questão exatamente como você quer visualizar depois no treino.</p>
           <form className="flashcards-form" onSubmit={addQuestion}>
             <div className="notebook-meta-grid"><div className="plan-field-group"><label className="plan-field-label" htmlFor="question-bank">Banca</label><input id="question-bank" className="subject-input" type="text" placeholder="Ex: FGV" value={questionForm.bank} onChange={(e) => setQuestionForm((p) => ({ ...p, bank: e.target.value }))} /></div><div className="plan-field-group"><label className="plan-field-label" htmlFor="question-year">Ano</label><input id="question-year" className="subject-input" type="text" inputMode="numeric" placeholder="Ex: 2025" value={questionForm.year} onChange={(e) => setQuestionForm((p) => ({ ...p, year: e.target.value }))} /></div></div>
-            <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-statement">Enunciado</label><textarea id="question-statement" className="subject-input notebook-textarea-lg" placeholder="Digite o enunciado completo da questão." value={questionForm.statement} onChange={(e) => setQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-statement">Enunciado</label><textarea id="question-statement" className="subject-input notebook-textarea-lg notebook-textarea-autogrow" rows="1" placeholder="Digite o enunciado completo da questão." value={questionForm.statement} onInput={autoResizeTextarea} onChange={(e) => setQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
             <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-support-text">Texto de apoio</label><textarea id="question-support-text" className="subject-input notebook-textarea-md" placeholder="Opcional. Use este campo se a questão tiver texto-base." value={questionForm.supportText} onChange={(e) => setQuestionForm((p) => ({ ...p, supportText: e.target.value }))} /></div>
             <div className="notebook-alternatives-header"><div><h3 className="notebook-block-title">Alternativas</h3><p className="flashcards-helper">Você define quantas opções quer manter no cadastro.</p></div><button type="button" className="plan-action-btn" onClick={addAlt}>Adicionar alternativa</button></div>
-            <div className="notebook-alternatives-list">{questionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><span className="notebook-alternative-label">{OPT[i]}</span><input className="subject-input" type="text" placeholder={`Texto da alternativa ${OPT[i]}`} value={a} onChange={(e) => changeAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
-            <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-correct-alternative">Alternativa correta</label><select id="question-correct-alternative" className="subject-input" value={questionForm.correctAlternative} onChange={(e) => setQuestionForm((p) => ({ ...p, correctAlternative: e.target.value }))}>{questionForm.alternatives.map((_, i) => <option key={OPT[i]} value={OPT[i]}>{OPT[i]}</option>)}</select></div>
+            <div className="notebook-alternatives-list">{questionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><button type="button" className={`notebook-alternative-label${questionForm.correctAlternative === OPT[i] ? ' is-correct' : ''}`} onClick={() => setQuestionForm((p) => ({ ...p, correctAlternative: OPT[i] }))} aria-label={`Definir alternativa ${OPT[i]} como correta`}>{OPT[i]}</button><input className="subject-input" type="text" placeholder={`Texto da alternativa ${OPT[i]}`} value={a} onChange={(e) => changeAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
             <div className="flashcards-actions"><button type="submit" className="subject-add-button">Salvar questão</button><button type="button" className="header-button header-button-secondary" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false) }}>Limpar formulário</button></div>
           </form>
         </section></Card> : null}
@@ -312,11 +404,10 @@ function QuestionNotebooks() {
         <div className="important-date-modal-header"><div><h2 id="question-edit-title" className="plan-modal-title">Editar questão</h2><p className="flashcards-helper">Ajuste os dados da questão sem sair do caderno.</p></div><button type="button" className="modal-close-button" onClick={closeQuestionEditor} aria-label="Fechar edição da questão">×</button></div>
         <form className="flashcards-form" onSubmit={saveQuestionEdit}>
           <div className="notebook-meta-grid"><div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-bank">Banca</label><input id="edit-question-bank" className="subject-input" type="text" value={editingQuestionForm.bank} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, bank: e.target.value }))} /></div><div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-year">Ano</label><input id="edit-question-year" className="subject-input" type="text" value={editingQuestionForm.year} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, year: e.target.value }))} /></div></div>
-          <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-statement">Enunciado</label><textarea id="edit-question-statement" className="subject-input notebook-textarea-lg" value={editingQuestionForm.statement} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
+          <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-statement">Enunciado</label><textarea id="edit-question-statement" className="subject-input notebook-textarea-lg notebook-textarea-autogrow" rows="1" value={editingQuestionForm.statement} onInput={autoResizeTextarea} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
           <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-support-text">Texto de apoio</label><textarea id="edit-question-support-text" className="subject-input notebook-textarea-md" value={editingQuestionForm.supportText} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, supportText: e.target.value }))} /></div>
           <div className="notebook-alternatives-header"><div><h3 className="notebook-block-title">Alternativas</h3><p className="flashcards-helper">Você pode ajustar quantas alternativas deseja manter.</p></div><button type="button" className="plan-action-btn" onClick={addQuestionEditorAlt}>Adicionar alternativa</button></div>
-          <div className="notebook-alternatives-list">{editingQuestionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><span className="notebook-alternative-label">{OPT[i]}</span><input className="subject-input" type="text" value={a} onChange={(e) => editQuestionAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeQuestionEditorAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
-          <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-correct-alternative">Alternativa correta</label><select id="edit-question-correct-alternative" className="subject-input" value={editingQuestionForm.correctAlternative} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, correctAlternative: e.target.value }))}>{editingQuestionForm.alternatives.map((_, i) => <option key={OPT[i]} value={OPT[i]}>{OPT[i]}</option>)}</select></div>
+          <div className="notebook-alternatives-list">{editingQuestionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><button type="button" className={`notebook-alternative-label${editingQuestionForm.correctAlternative === OPT[i] ? ' is-correct' : ''}`} onClick={() => setEditingQuestionForm((p) => ({ ...p, correctAlternative: OPT[i] }))} aria-label={`Definir alternativa ${OPT[i]} como correta`}>{OPT[i]}</button><input className="subject-input" type="text" value={a} onChange={(e) => editQuestionAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeQuestionEditorAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
           <div className="notebook-edit-actions"><button type="submit" className="subject-add-button">Salvar alterações</button><button type="button" className="header-button header-button-secondary" onClick={closeQuestionEditor}>Cancelar</button></div>
         </form>
       </div></div> : null}
