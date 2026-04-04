@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import SummaryCard from '../ui/SummaryCard'
 import Card from '../ui/Card'
 
@@ -60,10 +60,10 @@ function PlayIcon() {
   )
 }
 
-function QuestionNotebooks() {
+function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const [notebooks, setNotebooks] = useState(() => readStore())
-  const [view, setView] = useState('library')
-  const [selectedId, setSelectedId] = useState(null)
+  const [view, setView] = useState(() => (initialSelectedId ? 'detail' : 'library'))
+  const [selectedId, setSelectedId] = useState(() => initialSelectedId ?? null)
   const [shelfEdit, setShelfEdit] = useState(false)
   const [bookForm, setBookForm] = useState(emptyNotebook)
   const [questionForm, setQuestionForm] = useState(emptyQuestion)
@@ -109,6 +109,16 @@ function QuestionNotebooks() {
       document.documentElement.style.overflow = previousHtmlOverflow
     }
   }, [editing, editingQuestion])
+
+  useLayoutEffect(() => {
+    if (!initialSelectedId) return
+    const notebookExists = notebooks.some((notebook) => notebook.id === initialSelectedId)
+    if (!notebookExists) return
+    setSelectedId(initialSelectedId)
+    setView('detail')
+    setQuestionOpen(false)
+    setShelfEdit(false)
+  }, [initialSelectedId, notebooks])
 
   const goLibrary = () => { setView('library'); setSelectedId(null); setQuestionOpen(false); setQuestionForm(emptyQuestion()) }
   const openDetail = (id) => { setSelectedId(id); setView('detail'); setQuestionOpen(false); setShelfEdit(false) }
@@ -371,7 +381,7 @@ function QuestionNotebooks() {
       </section></Card></section> : null}
 
       {view === 'detail' && selected ? <section className="notebook-page-layout">
-        <Card><section className="panel-section"><div className={`notebook-detail-banner notebook-detail-banner--${selected.color}`} aria-hidden="true" /><div className="notebook-page-header"><div><button type="button" className="notebook-back-button" onClick={goLibrary}><span className="notebook-inline-icon"><ArrowLeftIcon /></span><span>Voltar para a estante</span></button><div className="notebook-title-row"><h2 className="section-title">{selected.name}</h2>{splitTags(selected.tag).length > 0 ? <div className="notebook-title-tags">{splitTags(selected.tag).map((tag) => <span key={tag} className="notebook-title-tag">{tag}</span>)}</div> : null}</div><p className="flashcards-helper">{selected.description || 'Adicione questões e use este caderno como base para os treinos futuros.'}</p></div><div className="notebook-page-actions"><button type="button" className="subject-add-button notebook-train-button" onClick={() => alert('O treinamento deste caderno será implementado posteriormente.')}><span className="notebook-inline-icon"><PlayIcon /></span><span>Iniciar treinamento</span></button></div></div></section></Card>
+        <Card><section className="panel-section"><div className={`notebook-detail-banner notebook-detail-banner--${selected.color}`} aria-hidden="true" /><div className="notebook-page-header"><div><button type="button" className="notebook-back-button" onClick={goLibrary}><span className="notebook-inline-icon"><ArrowLeftIcon /></span><span>Voltar para a estante</span></button><div className="notebook-title-row"><h2 className="section-title">{selected.name}</h2>{splitTags(selected.tag).length > 0 ? <div className="notebook-title-tags">{splitTags(selected.tag).map((tag) => <span key={tag} className="notebook-title-tag">{tag}</span>)}</div> : null}</div><p className="flashcards-helper">{selected.description || 'Adicione questões e use este caderno como base para os treinos futuros.'}</p></div><div className="notebook-page-actions"><button type="button" className="subject-add-button notebook-train-button" onClick={() => onStartTraining?.(selected.id)} disabled={selected.questions.length === 0}><span className="notebook-inline-icon"><PlayIcon /></span><span>{selected.questions.length === 0 ? 'Adicione questões para treinar' : 'Iniciar treinamento'}</span></button></div></div></section></Card>
         <Card><section className="panel-section"><div className="notebook-section-heading"><div><h3 className="section-title">Questões do caderno</h3><p className="flashcards-helper">Veja as suas questões ou use o último card para adicionar novas.</p></div></div>
           <div className="question-cards-grid">{selected.questions.map((q, i) => <article key={q.id} className={`question-card question-card-draggable ${draggedQuestionId === q.id ? 'is-dragging' : ''} ${dragOverQuestionId === q.id && draggedQuestionId !== q.id ? 'is-drop-target' : ''}`} draggable onDragStart={() => handleQuestionDragStart(q.id)} onDragOver={(event) => handleQuestionDragOver(event, q.id)} onDrop={(event) => handleQuestionDrop(event, q.id)} onDragEnd={handleQuestionDragEnd}><span className="question-card-index">Questão {i + 1}</span><div className="flashcard-tags"><span className="pill info">{q.bank}</span><span className="pill">{q.year}</span><span className="pill success">{q.correctCount ?? 0} acertos</span></div><p className="question-card-statement">{short(q.statement, 180)}</p>{q.supportText ? <p className="question-card-support">{short(q.supportText, 120)}</p> : <p className="question-card-support">Sem texto de apoio.</p>}<div className="question-card-actions"><button type="button" className="plan-action-btn" onClick={() => openQuestionEditor(q)}>Editar questão</button></div></article>)}<button type="button" className={`question-card question-card-add${questionOpen ? ' is-active' : ''}`} onClick={() => setQuestionOpen(true)}><span className="question-card-plus">+</span><strong>Adicionar nova questão</strong><p>Abra o formulário e cadastre banca, ano, enunciado, texto de apoio e alternativas.</p></button></div>
           {selected.questions.length === 0 ? <p className="empty-message">Este caderno ainda está vazio. O card de adição já está disponível acima para começar o cadastro.</p> : null}

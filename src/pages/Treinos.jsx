@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Footer from '../components/layout/Footer'
 import Flashcards from './Flashcards'
 import QuestionNotebooks from '../components/study/QuestionNotebooks'
@@ -14,8 +14,14 @@ const TRAINING_OPTIONS = [
   }
 ]
 
-function Treinos() {
+function Treinos({ onStartQuestionTraining, resumeNotebookId }) {
   const [activeMode, setActiveMode] = useState('notebooks')
+
+  useEffect(() => {
+    if (resumeNotebookId) {
+      setActiveMode('notebooks')
+    }
+  }, [resumeNotebookId])
 
   return (
     <section className="dashboard-content">
@@ -34,7 +40,12 @@ function Treinos() {
         </div>
       </section>
 
-      {activeMode === 'notebooks' ? <QuestionNotebooks /> : <Flashcards embedded />}
+      {activeMode === 'notebooks' ? (
+        <QuestionNotebooks
+          onStartTraining={onStartQuestionTraining}
+          initialSelectedId={resumeNotebookId}
+        />
+      ) : <Flashcards embedded />}
 
       <Footer />
     </section>

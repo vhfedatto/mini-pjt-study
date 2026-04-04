@@ -9,6 +9,7 @@ import Profile from './pages/Profile'
 import Ranking from './pages/Ranking'
 import Login from './pages/Login'
 import Sidebar from './components/layout/Sidebar'
+import QuestionTraining from './pages/QuestionTraining'
 
 const SIDEBAR_BREAKPOINT = 1180
 
@@ -18,6 +19,8 @@ function App() {
     return window.localStorage.getItem('studydash-session') === 'authenticated'
   })
   const [activePage, setActivePage] = useState('dashboard')
+  const [questionTrainingNotebookId, setQuestionTrainingNotebookId] = useState(null)
+  const [resumeNotebookId, setResumeNotebookId] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return window.innerWidth > SIDEBAR_BREAKPOINT
@@ -49,6 +52,12 @@ function App() {
 
   function handleNavigate(pageKey) {
     setActivePage(pageKey)
+    if (pageKey !== 'question-training') {
+      setQuestionTrainingNotebookId(null)
+    }
+    if (pageKey !== 'flashcards') {
+      setResumeNotebookId(null)
+    }
     if (typeof window !== 'undefined' && window.innerWidth <= SIDEBAR_BREAKPOINT) {
       setIsSidebarOpen(false)
     }
@@ -60,49 +69,74 @@ function App() {
     setActivePage('dashboard')
   }
 
+  function handleStartQuestionTraining(notebookId) {
+    setQuestionTrainingNotebookId(notebookId)
+    setResumeNotebookId(notebookId)
+    setActivePage('question-training')
+  }
+
+  function handleExitQuestionTraining() {
+    setQuestionTrainingNotebookId(null)
+    setActivePage('flashcards')
+  }
+
+  const isQuestionTraining = activePage === 'question-training'
+
   return (
-    <main className="dashboard-layout">
-      <button
-        type="button"
-        className={`sidebar-toggle${isSidebarOpen ? ' is-open' : ''}`}
-        aria-label={isSidebarOpen ? 'Fechar menu' : 'Abrir menu'}
-        onClick={toggleSidebar}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M4 7h16M4 12h16M4 17h12"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    <main className={`dashboard-layout${isQuestionTraining ? ' dashboard-layout-training' : ''}`}>
+      {!isQuestionTraining ? (
+        <>
+          <button
+            type="button"
+            className={`sidebar-toggle${isSidebarOpen ? ' is-open' : ''}`}
+            aria-label={isSidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+            onClick={toggleSidebar}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M4 7h16M4 12h16M4 17h12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          <Sidebar
+            activePage={activePage}
+            setActivePage={handleNavigate}
+            isOpen={isSidebarOpen}
+            onToggleSidebar={toggleSidebar}
           />
-        </svg>
-      </button>
 
-      <Sidebar
-        activePage={activePage}
-        setActivePage={handleNavigate}
-        isOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-      />
-
-      {isSidebarOpen ? (
-        <div
-          className="sidebar-backdrop is-visible"
-          role="presentation"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+          {isSidebarOpen ? (
+            <div
+              className="sidebar-backdrop is-visible"
+              role="presentation"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {activePage === 'dashboard' && <Dashboard />}
       {activePage === 'agenda' && <Agenda />}
-      {activePage === 'flashcards' && <Treinos />}
+      {activePage === 'flashcards' && (
+        <Treinos
+          onStartQuestionTraining={handleStartQuestionTraining}
+          resumeNotebookId={resumeNotebookId}
+        />
+      )}
+      {activePage === 'question-training' && (
+        <QuestionTraining notebookId={questionTrainingNotebookId} onExit={handleExitQuestionTraining} />
+      )}
       {activePage === 'progress' && <Progress />}
       {activePage === 'ranking' && <Ranking />}
       {activePage === 'important-dates' && <ImportantDates />}
       {activePage === 'profile' && <Profile />}
       {activePage === 'settings' && <Settings onLogout={handleLogout} />}
-      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && (
+      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && (
         <section className="dashboard-content" style={{ padding: '24px' }}>
           <h2>Selecione uma opção no menu lateral</h2>
         </section>
