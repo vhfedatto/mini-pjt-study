@@ -2927,9 +2927,15 @@ button {
 }
 
 .training-tab.is-active {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 50%, white 50%), var(--panel));
-  color: var(--accent-strong);
-  box-shadow: var(--shadow);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 214, 0.94), rgba(255, 236, 163, 0.9)),
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 55%);
+  color: #7a4300;
+  box-shadow:
+    0 10px 24px rgba(214, 154, 33, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(219, 164, 42, 0.38);
+  backdrop-filter: blur(8px);
 }
 
 .notebooks-layout {
@@ -2987,6 +2993,12 @@ button {
   line-height: 1.6;
 }
 
+.question-card-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .question-card-index {
   display: inline-flex;
   margin-bottom: 10px;
@@ -3029,6 +3041,10 @@ button {
 .notebook-book--oliva { background: linear-gradient(165deg, #556b2f, #38491c 72%); }
 .notebook-book--ameixa { background: linear-gradient(165deg, #6c4b7a, #4d3059 72%); }
 .notebook-book--grafite { background: linear-gradient(165deg, #51545c, #2f3238 72%); }
+.notebook-book--ambar { background: linear-gradient(165deg, #9a6a1f, #6f4711 72%); }
+.notebook-book--vinho { background: linear-gradient(165deg, #7a2447, #55162f 72%); }
+.notebook-book--esmeralda { background: linear-gradient(165deg, #1f7a5a, #14533c 72%); }
+.notebook-book--anil { background: linear-gradient(165deg, #314d8b, #1e315e 72%); }
 
 .notebook-book-spine {
   position: absolute;
@@ -3082,6 +3098,13 @@ button {
   color: #fff8ef;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.notebook-book-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .notebook-book-meta {
@@ -3142,21 +3165,30 @@ button {
   gap: 12px;
 }
 
+.notebook-preview-panel > .notebook-book-topline {
+  color: var(--text-primary);
+}
+
 .notebook-color-picker {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  width: 100%;
 }
 
 .notebook-color-chip {
-  min-height: 46px;
+  min-height: 48px;
   border: 1px solid var(--border);
   border-radius: 14px;
   color: white;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.2s ease;
+  padding: 0 10px;
+  text-transform: capitalize;
+  width: 100%;
 }
 
 .notebook-color-chip:hover {
@@ -3172,6 +3204,10 @@ button {
 .notebook-color-chip--oliva { background: linear-gradient(165deg, #556b2f, #38491c 72%); }
 .notebook-color-chip--ameixa { background: linear-gradient(165deg, #6c4b7a, #4d3059 72%); }
 .notebook-color-chip--grafite { background: linear-gradient(165deg, #51545c, #2f3238 72%); }
+.notebook-color-chip--ambar { background: linear-gradient(165deg, #9a6a1f, #6f4711 72%); }
+.notebook-color-chip--vinho { background: linear-gradient(165deg, #7a2447, #55162f 72%); }
+.notebook-color-chip--esmeralda { background: linear-gradient(165deg, #1f7a5a, #14533c 72%); }
+.notebook-color-chip--anil { background: linear-gradient(165deg, #314d8b, #1e315e 72%); }
 
 .notebook-detail-meta,
 .notebook-edit-meta {
@@ -3182,6 +3218,36 @@ button {
   margin: 10px 0 12px;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.notebook-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.notebook-title-row .section-title {
+  margin: 0;
+}
+
+.notebook-title-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notebook-title-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(196, 107, 45, 0.14);
+  color: #7a4300;
+  border: 1px solid rgba(196, 107, 45, 0.22);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .notebook-edit-modal {
@@ -3208,6 +3274,9 @@ button {
 .notebook-edit-modal .plan-field-group,
 .notebook-edit-modal .subject-input,
 .notebook-edit-modal .notebook-description-input,
+.notebooks-layout .plan-field-group,
+.notebooks-layout .subject-input,
+.notebooks-layout .notebook-description-input,
 .notebook-edit-actions .subject-add-button {
   width: 100%;
   box-sizing: border-box;
@@ -3296,6 +3365,10 @@ button {
 .notebook-detail-banner--oliva { background: linear-gradient(90deg, #556b2f, #38491c); }
 .notebook-detail-banner--ameixa { background: linear-gradient(90deg, #6c4b7a, #4d3059); }
 .notebook-detail-banner--grafite { background: linear-gradient(90deg, #51545c, #2f3238); }
+.notebook-detail-banner--ambar { background: linear-gradient(90deg, #9a6a1f, #6f4711); }
+.notebook-detail-banner--vinho { background: linear-gradient(90deg, #7a2447, #55162f); }
+.notebook-detail-banner--esmeralda { background: linear-gradient(90deg, #1f7a5a, #14533c); }
+.notebook-detail-banner--anil { background: linear-gradient(90deg, #314d8b, #1e315e); }
 
 .notebook-train-button {
   background: linear-gradient(180deg, #3eae68, #2e8f53);
@@ -3815,6 +3888,10 @@ button {
   .notebook-detail-meta,
   .notebook-edit-meta {
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notebook-title-row {
     align-items: flex-start;
   }
 
