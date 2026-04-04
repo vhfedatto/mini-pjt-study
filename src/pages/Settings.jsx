@@ -2,15 +2,127 @@ import { useRef, useState } from 'react'
 import Footer from '../components/layout/Footer'
 import Card from '../components/ui/Card'
 
-const EXPORT_STORAGE_KEYS = [
+const BACKUP_STORAGE_KEYS = [
   'plans',
   'studyPlans',
   'subjects',
   'tasks',
   'agendaItems',
   'importantDates',
-  'flashcards'
+  'flashcards',
+  'question-notebooks',
+  'rankingCompetitions',
+  'studydash-user',
+  'studydash-password',
+  'studydash-session',
+  'theme'
 ]
+
+function readParsedStorage(key, fallback) {
+  const stored = localStorage.getItem(key)
+  if (stored === null) return fallback
+
+  try {
+    return JSON.parse(stored)
+  } catch {
+    return stored
+  }
+}
+
+function buildProgressSnapshot({ plans, subjects, tasks, flashcards, notebooks, agendaItems, importantDates }) {
+  const totalTasks = tasks.length
+  const archivedTasks = tasks.filter((task) => task.archived).length
+  const completedTasks = tasks.filter((task) => task.completed).length
+  const pendingTasks = totalTasks - completedTasks
+  const progressPercent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
+
+  const progressBySubject = subjects.map((subject) => {
+    const subjectTasks = tasks.filter((task) => task.subjectId === subject.id)
+    const linkedPlan = plans.find((plan) => plan.id === subject.planId)
+    const subjectCompleted = subjectTasks.filter((task) => task.completed).length
+
+    return {
+      subjectId: subject.id,
+      subjectName: subject.name,
+      planId: subject.planId ?? null,
+      planName: linkedPlan?.name || 'Plano sem nome',
+      totalTasks: subjectTasks.length,
+      completedTasks: subjectCompleted,
+      pendingTasks: subjectTasks.length - subjectCompleted,
+      archivedTasks: subjectTasks.filter((task) => task.archived).length,
+      progressPercent: subjectTasks.length === 0 ? 0 : Math.round((subjectCompleted / subjectTasks.length) * 100)
+    }
+  })
+
+  return {
+    generatedAt: new Date().toISOString(),
+    totals: {
+      plans: plans.length,
+      subjects: subjects.length,
+      tasks: totalTasks,
+      archivedTasks,
+      completedTasks,
+      pendingTasks,
+      progressPercent,
+      flashcards: flashcards.length,
+      flashcardDecks: new Set(flashcards.map((card) => card.deckId)).size,
+      notebooks: notebooks.length,
+      notebookQuestions: notebooks.reduce((total, notebook) => total + (notebook.questions?.length || 0), 0),
+      agendaItems: agendaItems.length,
+      importantDates: importantDates.length
+    },
+    bySubject: progressBySubject
+  }
+}
+
+function createBackupPayload() {
+  const plans = readParsedStorage('plans', readParsedStorage('studyPlans', []))
+  const studyPlans = readParsedStorage('studyPlans', plans)
+  const subjects = readParsedStorage('subjects', [])
+  const tasks = readParsedStorage('tasks', [])
+  const agendaItems = readParsedStorage('agendaItems', [])
+  const importantDates = readParsedStorage('importantDates', [])
+  const flashcards = readParsedStorage('flashcards', [])
+  const notebooks = readParsedStorage('question-notebooks', [])
+  const competitions = readParsedStorage('rankingCompetitions', [])
+  const user = readParsedStorage('studydash-user', null)
+  const password = localStorage.getItem('studydash-password')
+  const session = localStorage.getItem('studydash-session')
+  const theme = localStorage.getItem('theme')
+
+  return {
+    exportedAt: new Date().toISOString(),
+    app: 'study-dashboard',
+    version: 2,
+    rawStorage: Object.fromEntries(BACKUP_STORAGE_KEYS.map((key) => [key, localStorage.getItem(key)])),
+    data: {
+      profile: {
+        user,
+        password,
+        session,
+        theme
+      },
+      plans,
+      studyPlans,
+      subjects,
+      tasks,
+      flashcards,
+      notebooks,
+      agendaItems,
+      importantDates,
+      competitions,
+      progress: buildProgressSnapshot({
+        plans: Array.isArray(plans) ? plans : [],
+        subjects: Array.isArray(subjects) ? subjects : [],
+        tasks: Array.isArray(tasks) ? tasks : [],
+        flashcards: Array.isArray(flashcards) ? flashcards : [],
+        notebooks: Array.isArray(notebooks) ? notebooks : [],
+        agendaItems: Array.isArray(agendaItems) ? agendaItems : [],
+        importantDates: Array.isArray(importantDates) ? importantDates : []
+      })
+    }
+  }
+}
 
 function Settings({ onLogout }) {
   const importInputRef = useRef(null)
@@ -64,12 +176,7 @@ function Settings({ onLogout }) {
   }
 
   function handleExport() {
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      app: 'study-dashboard',
-      version: 1,
-      data: Object.fromEntries(EXPORT_STORAGE_KEYS.map((key) => [key, localStorage.getItem(key)]))
-    }
+    const payload = createBackupPayload()
 
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -93,12 +200,19 @@ function Settings({ onLogout }) {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result || '{}'))
-        if (!parsed || typeof parsed !== 'object' || !parsed.data || typeof parsed.data !== 'object') {
+        const rawStorage =
+          parsed && typeof parsed === 'object' && parsed.rawStorage && typeof parsed.rawStorage === 'object'
+            ? parsed.rawStorage
+            : parsed && typeof parsed === 'object' && parsed.data && typeof parsed.data === 'object'
+              ? parsed.data
+              : null
+
+        if (!rawStorage) {
           throw new Error('Formato invalido')
         }
 
-        EXPORT_STORAGE_KEYS.forEach((key) => {
-          const value = parsed.data[key]
+        BACKUP_STORAGE_KEYS.forEach((key) => {
+          const value = rawStorage[key]
           if (typeof value === 'string') {
             localStorage.setItem(key, value)
           } else {
@@ -106,13 +220,14 @@ function Settings({ onLogout }) {
           }
         })
 
-        const syncedPlans = parsed.data.plans ?? parsed.data.studyPlans
+        const syncedPlans = rawStorage.plans ?? rawStorage.studyPlans
         if (typeof syncedPlans === 'string') {
           localStorage.setItem('plans', syncedPlans)
           localStorage.setItem('studyPlans', syncedPlans)
         }
 
         globalThis.dispatchEvent(new Event('storage'))
+        globalThis.dispatchEvent(new Event('study-plans-updated'))
         globalThis.dispatchEvent(new Event('important-dates-updated'))
         setStatusMessage('Backup importado com sucesso. Navegue pelas abas para ver os dados atualizados.')
       } catch {
@@ -160,7 +275,7 @@ function Settings({ onLogout }) {
           <div className="settings-card-grid">
             <article className="settings-info-card">
               <h3>O que entra no backup</h3>
-              <p>Planos, matérias, tarefas, eventos da agenda, provas e flashcards.</p>
+              <p>Cadernos com questões, flashcards, perfil, senha local, sessão, matérias, tarefas, progresso, agenda, provas, competições e preferências.</p>
             </article>
             <article className="settings-info-card">
               <h3>Como importar</h3>

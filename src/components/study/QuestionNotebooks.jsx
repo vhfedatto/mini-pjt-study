@@ -193,7 +193,7 @@ function QuestionNotebooks() {
       alternatives: alternatives.map((text, i) => ({ label: OPT[i], text })),
       createdAt: now
     }
-    setNotebooks((p) => p.map((n) => n.id === selected.id ? { ...n, updatedAt: now, questions: [question, ...n.questions] } : n))
+    setNotebooks((p) => p.map((n) => n.id === selected.id ? { ...n, updatedAt: now, questions: [...n.questions, question] } : n))
     setQuestionForm(emptyQuestion()); setQuestionOpen(false)
   }
 

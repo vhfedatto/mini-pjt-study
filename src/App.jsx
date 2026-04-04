@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Progress from './pages/Progress'
@@ -10,6 +10,8 @@ import Ranking from './pages/Ranking'
 import Login from './pages/Login'
 import Sidebar from './components/layout/Sidebar'
 
+const SIDEBAR_BREAKPOINT = 1180
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -18,8 +20,24 @@ function App() {
   const [activePage, setActivePage] = useState('dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true
-    return window.innerWidth > 1080
+    return window.innerWidth > SIDEBAR_BREAKPOINT
   })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    function syncSidebarWithViewport() {
+      if (window.innerWidth > SIDEBAR_BREAKPOINT) {
+        setIsSidebarOpen(true)
+      }
+    }
+
+    window.addEventListener('resize', syncSidebarWithViewport)
+
+    return () => {
+      window.removeEventListener('resize', syncSidebarWithViewport)
+    }
+  }, [])
 
   if (!isAuthenticated) {
     return <Login onLoginSuccess={() => setIsAuthenticated(true)} />
@@ -31,6 +49,9 @@ function App() {
 
   function handleNavigate(pageKey) {
     setActivePage(pageKey)
+    if (typeof window !== 'undefined' && window.innerWidth <= SIDEBAR_BREAKPOINT) {
+      setIsSidebarOpen(false)
+    }
   }
 
   function handleLogout() {
@@ -65,7 +86,13 @@ function App() {
         onToggleSidebar={toggleSidebar}
       />
 
-      {isSidebarOpen ? <div className="sidebar-backdrop is-visible" /> : null}
+      {isSidebarOpen ? (
+        <div
+          className="sidebar-backdrop is-visible"
+          role="presentation"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      ) : null}
 
       {activePage === 'dashboard' && <Dashboard />}
       {activePage === 'agenda' && <Agenda />}

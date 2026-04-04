@@ -378,7 +378,7 @@ body {
   pointer-events: auto;
 }
 
-@media (min-width: 1081px) {
+@media (min-width: 1181px) {
   .sidebar-backdrop {
     display: none;
   }
@@ -750,6 +750,14 @@ body {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html:has(.plan-modal-overlay),
+body:has(.plan-modal-overlay) {
+  overflow: hidden;
 }
 
 .plan-modal {
@@ -1558,7 +1566,7 @@ body {
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1180px) {
   .dashboard-layout {
     padding: 18px 16px;
     gap: 16px;
@@ -3352,7 +3360,9 @@ button {
 }
 
 .notebook-textarea-lg {
-  min-height: 56px;
+  min-height: 88px;
+  padding: 16px 18px;
+  line-height: 1.65;
 }
 
 .notebook-textarea-autogrow {
@@ -3890,7 +3900,7 @@ button {
   font-size: 0.88rem;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1180px) {
   .important-dates-layout {
     grid-template-columns: minmax(280px, 1fr) minmax(420px, 1.5fr);
   }
@@ -3913,7 +3923,7 @@ button {
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .important-dates-layout {
     grid-template-columns: 1fr;
   }
@@ -3936,7 +3946,7 @@ button {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 750px) {
   .notebooks-shelf,
   .question-cards-grid {
     grid-template-columns: 1fr;
@@ -4057,7 +4067,7 @@ button {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 750px) {
   .flashcards-actions {
     grid-template-columns: 1fr;
   }
@@ -4092,5 +4102,208 @@ button {
   .agenda-calendar-cell-placeholder {
     min-height: 76px;
     padding: 6px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .dashboard-content {
+    padding: 72px 0 32px;
+    gap: 18px;
+  }
+
+  .header {
+    padding: 20px;
+  }
+
+  .header-title {
+    font-size: 1.8rem;
+  }
+
+  .header-actions,
+  .settings-actions,
+  .top-nav {
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .split-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .summary-grid,
+  .settings-card-grid,
+  .progress-archived-list,
+  .important-dates-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .progress-card-header,
+  .summary-card-header,
+  .profile-friends-header,
+  .important-date-modal-header,
+  .ranking-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .progress-card-header > *,
+  .important-date-modal-header > * {
+    min-width: 0;
+  }
+
+  .progress-table {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ranking-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ranking-select-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .ranking-select-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .ranking-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 750px) {
+  .dashboard-layout {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .dashboard-content {
+    padding: 68px 0 28px;
+    gap: 16px;
+  }
+
+  .sidebar {
+    left: 12px;
+    top: 12px;
+    width: min(340px, calc(100vw - 24px));
+    height: calc(100vh - 24px);
+  }
+
+  .sidebar-toggle {
+    top: 14px;
+    left: 14px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 18px 16px;
+  }
+
+  .header-title {
+    font-size: 1.55rem;
+    line-height: 1.2;
+  }
+
+  .header-subtitle {
+    font-size: 0.96rem;
+  }
+
+  .header-actions,
+  .settings-actions,
+  .top-nav,
+  .progress-card-header,
+  .summary-card-header,
+  .profile-friends-header,
+  .important-date-modal-header,
+  .ranking-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions .header-button,
+  .settings-actions > *,
+  .top-nav button,
+  .progress-card-header .plan-action-btn,
+  .ranking-select-actions > button,
+  .ranking-select-actions > select,
+  .important-date-modal-header .modal-close-button,
+  .important-date-modal-header .subject-remove-button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .summary-grid,
+  .settings-card-grid,
+  .split-grid,
+  .progress-archived-list,
+  .important-dates-list {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card,
+  .question-card,
+  .important-date-card {
+    padding: 16px;
+  }
+
+  .progress-table,
+  .ranking-row,
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-row-header,
+  .ranking-row-header {
+    display: none;
+  }
+
+  .progress-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+
+  .progress-row + .progress-row {
+    margin-top: 12px;
+  }
+
+  .progress-row > div,
+  .ranking-row > div {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .ranking-board {
+    gap: 12px;
+  }
+
+  .ranking-row {
+    gap: 8px;
+  }
+
+  .ranking-select-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .plan-modal,
+  .progress-archived-modal,
+  .notebook-edit-modal,
+  .agenda-modal {
+    width: calc(100vw - 24px);
+    margin: 12px;
   }
 }
