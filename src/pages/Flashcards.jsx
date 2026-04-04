@@ -243,7 +243,7 @@ function generateFlashcards({ subjectId, subjectName, topic, content, desiredCou
   })
 }
 
-function Flashcards() {
+function Flashcards({ embedded = false }) {
   const [subjects] = useState(() => {
     const stored = localStorage.getItem('subjects')
     return stored ? JSON.parse(stored) : []
@@ -565,7 +565,7 @@ function Flashcards() {
 
   return (
     <section className="dashboard-content">
-      <Header />
+      {embedded ? null : <Header />}
 
       <section className="summary-grid">
         <SummaryCard
@@ -875,7 +875,7 @@ function Flashcards() {
         </Card>
       </section>
 
-      <Footer />
+      {embedded ? null : <Footer />}
     </section>
   )
 }

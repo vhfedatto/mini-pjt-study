@@ -3,7 +3,7 @@ import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Progress from './pages/Progress'
 import ImportantDates from './pages/ImportantDates'
-import Flashcards from './pages/Flashcards'
+import Treinos from './pages/Treinos'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 import Ranking from './pages/Ranking'
@@ -69,7 +69,7 @@ function App() {
 
       {activePage === 'dashboard' && <Dashboard />}
       {activePage === 'agenda' && <Agenda />}
-      {activePage === 'flashcards' && <Flashcards />}
+      {activePage === 'flashcards' && <Treinos />}
       {activePage === 'progress' && <Progress />}
       {activePage === 'ranking' && <Ranking />}
       {activePage === 'important-dates' && <ImportantDates />}
