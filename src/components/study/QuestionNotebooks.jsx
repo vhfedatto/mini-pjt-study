@@ -2,633 +2,218 @@ import { useEffect, useMemo, useState } from 'react'
 import SummaryCard from '../ui/SummaryCard'
 import Card from '../ui/Card'
 
-const NOTEBOOKS_STORAGE_KEY = 'question-notebooks'
-const OPTION_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+const KEY = 'question-notebooks'
+const OPT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+const COLORS = ['terracota', 'oceano', 'oliva', 'ameixa', 'grafite']
 
-function safeParse(storageKey) {
-  const stored = localStorage.getItem(storageKey)
-  if (!stored) return []
+const emptyNotebook = () => ({ name: '', description: '', tag: '', color: COLORS[0] })
+const emptyQuestion = () => ({ bank: '', year: '', statement: '', supportText: '', alternatives: ['', '', '', ''], correctAlternative: 'A' })
 
+function fmt(value) {
   try {
-    const parsed = JSON.parse(stored)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+  } catch { return 'Data inválida' }
 }
 
-function formatNotebookUpdatedAt(value) {
-  if (!value) return 'Ainda sem atividade'
+function short(text, len = 150) {
+  const v = (text || '').replaceAll(/\s+/g, ' ').trim()
+  return v.length <= len ? v : `${v.slice(0, len - 3)}...`
+}
 
+function readStore() {
   try {
-    return new Intl.DateTimeFormat('pt-BR', {
-      dateStyle: 'short',
-      timeStyle: 'short'
-    }).format(new Date(value))
-  } catch {
-    return 'Data inválida'
-  }
+    const parsed = JSON.parse(localStorage.getItem(KEY) || '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((item, i) => ({
+      id: item.id ?? Date.now() + i,
+      name: item.name ?? 'Caderno sem nome',
+      description: item.description ?? '',
+      tag: item.tag ?? '',
+      color: item.color ?? COLORS[i % COLORS.length],
+      createdAt: item.createdAt ?? item.updatedAt ?? Date.now(),
+      updatedAt: item.updatedAt ?? item.createdAt ?? Date.now(),
+      questions: Array.isArray(item.questions) ? item.questions : []
+    }))
+  } catch { return [] }
 }
 
-function truncateText(text, length = 150) {
-  const normalized = text.replaceAll(/\s+/g, ' ').trim()
-  if (normalized.length <= length) return normalized
-  return `${normalized.slice(0, length - 3)}...`
+function ArrowLeftIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m14 6-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
-function buildEmptyQuestionForm() {
-  return {
-    bank: '',
-    year: '',
-    statement: '',
-    supportText: '',
-    alternatives: ['', '', '', ''],
-    correctAlternative: 'A'
-  }
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8 6.5v11l9-5.5-9-5.5Z" fill="currentColor" />
+    </svg>
+  )
 }
 
 function QuestionNotebooks() {
-  const [notebooks, setNotebooks] = useState(() => safeParse(NOTEBOOKS_STORAGE_KEY))
-  const [selectedNotebookId, setSelectedNotebookId] = useState(null)
+  const [notebooks, setNotebooks] = useState(() => readStore())
   const [view, setView] = useState('library')
-  const [newNotebookName, setNewNotebookName] = useState('')
-  const [newNotebookDescription, setNewNotebookDescription] = useState('')
-  const [isQuestionFormOpen, setIsQuestionFormOpen] = useState(false)
-  const [questionForm, setQuestionForm] = useState(() => buildEmptyQuestionForm())
+  const [selectedId, setSelectedId] = useState(null)
+  const [shelfEdit, setShelfEdit] = useState(false)
+  const [bookForm, setBookForm] = useState(emptyNotebook)
+  const [questionForm, setQuestionForm] = useState(emptyQuestion)
+  const [questionOpen, setQuestionOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState(emptyNotebook)
 
-  useEffect(() => {
-    localStorage.setItem(NOTEBOOKS_STORAGE_KEY, JSON.stringify(notebooks))
-  }, [notebooks])
+  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(notebooks)) }, [notebooks])
 
-  const selectedNotebook = useMemo(
-    () => notebooks.find((notebook) => notebook.id === selectedNotebookId) ?? null,
-    [notebooks, selectedNotebookId]
-  )
+  const selected = useMemo(() => notebooks.find((n) => n.id === selectedId) ?? null, [notebooks, selectedId])
+  const editing = useMemo(() => notebooks.find((n) => n.id === editingId) ?? null, [notebooks, editingId])
+  const totalQuestions = useMemo(() => notebooks.reduce((t, n) => t + n.questions.length, 0), [notebooks])
+  const activeBooks = useMemo(() => notebooks.filter((n) => n.questions.length > 0).length, [notebooks])
 
-  const totalQuestions = useMemo(
-    () => notebooks.reduce((total, notebook) => total + notebook.questions.length, 0),
-    [notebooks]
-  )
+  const goLibrary = () => { setView('library'); setSelectedId(null); setQuestionOpen(false); setQuestionForm(emptyQuestion()) }
+  const openDetail = (id) => { setSelectedId(id); setView('detail'); setQuestionOpen(false); setShelfEdit(false) }
+  const openEditor = (book) => { setEditingId(book.id); setEditForm({ name: book.name, description: book.description, tag: book.tag, color: book.color }) }
+  const closeEditor = () => { setEditingId(null); setEditForm(emptyNotebook()) }
 
-  const notebooksWithQuestions = useMemo(
-    () => notebooks.filter((notebook) => notebook.questions.length > 0).length,
-    [notebooks]
-  )
-
-  function handleCreateNotebook(event) {
-    event.preventDefault()
-
-    const trimmedName = newNotebookName.trim()
-    const trimmedDescription = newNotebookDescription.trim()
-
-    if (!trimmedName) {
-      alert('Informe um nome para o caderno.')
-      return
-    }
-
-    const timestamp = Date.now()
-    const newNotebook = {
-      id: timestamp,
-      name: trimmedName,
-      description: trimmedDescription,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      questions: []
-    }
-
-    setNotebooks((previous) => [newNotebook, ...previous])
-    setSelectedNotebookId(newNotebook.id)
-    setView('detail')
-    setNewNotebookName('')
-    setNewNotebookDescription('')
+  function createBook(e) {
+    e.preventDefault()
+    const name = bookForm.name.trim()
+    if (!name) return alert('Informe um nome para o caderno.')
+    const now = Date.now()
+    const book = { id: now, name, description: bookForm.description.trim(), tag: bookForm.tag.trim(), color: bookForm.color, createdAt: now, updatedAt: now, questions: [] }
+    setNotebooks((p) => [book, ...p]); setBookForm(emptyNotebook()); setSelectedId(book.id); setView('detail')
   }
 
-  function handleAddAlternative() {
-    setQuestionForm((previous) => ({
-      ...previous,
-      alternatives: [...previous.alternatives, '']
-    }))
+  function saveBook(e) {
+    e.preventDefault()
+    if (!editing) return
+    const name = editForm.name.trim()
+    if (!name) return alert('Informe um nome para o caderno.')
+    const now = Date.now()
+    setNotebooks((p) => p.map((n) => n.id === editing.id ? { ...n, name, description: editForm.description.trim(), tag: editForm.tag.trim(), color: editForm.color, updatedAt: now } : n))
+    closeEditor()
   }
 
-  function handleRemoveAlternative(indexToRemove) {
-    setQuestionForm((previous) => {
-      if (previous.alternatives.length <= 2) return previous
+  function deleteBook() {
+    if (!editing) return
+    if (!window.confirm(`Excluir o caderno "${editing.name}"?`)) return
+    setNotebooks((p) => p.filter((n) => n.id !== editing.id))
+    if (selectedId === editing.id) goLibrary()
+    closeEditor()
+  }
 
-      const nextAlternatives = previous.alternatives.filter((_, index) => index !== indexToRemove)
-      const nextCorrectIndex = Math.min(
-        OPTION_LABELS.indexOf(previous.correctAlternative),
-        nextAlternatives.length - 1
-      )
-
-      return {
-        ...previous,
-        alternatives: nextAlternatives,
-        correctAlternative: OPTION_LABELS[Math.max(nextCorrectIndex, 0)]
-      }
+  function addAlt() { setQuestionForm((p) => ({ ...p, alternatives: [...p.alternatives, ''] })) }
+  function removeAlt(i) {
+    setQuestionForm((p) => {
+      if (p.alternatives.length <= 2) return p
+      const alternatives = p.alternatives.filter((_, idx) => idx !== i)
+      const correctAlternative = OPT[Math.max(0, Math.min(OPT.indexOf(p.correctAlternative), alternatives.length - 1))]
+      return { ...p, alternatives, correctAlternative }
     })
   }
+  function changeAlt(i, value) { setQuestionForm((p) => ({ ...p, alternatives: p.alternatives.map((a, idx) => idx === i ? value : a) })) }
 
-  function handleAlternativeChange(indexToUpdate, value) {
-    setQuestionForm((previous) => ({
-      ...previous,
-      alternatives: previous.alternatives.map((alternative, index) =>
-        index === indexToUpdate ? value : alternative
-      )
-    }))
-  }
-
-  function resetQuestionForm() {
-    setQuestionForm(buildEmptyQuestionForm())
-    setIsQuestionFormOpen(false)
-  }
-
-  function goToLibrary() {
-    setView('library')
-    setSelectedNotebookId(null)
-    resetQuestionForm()
-  }
-
-  function openNotebookDetail(notebookId) {
-    setSelectedNotebookId(notebookId)
-    setView('detail')
-    setIsQuestionFormOpen(false)
-  }
-
-  function handleAddQuestion(event) {
-    event.preventDefault()
-    if (!selectedNotebook) return
-
-    const normalizedStatement = questionForm.statement.trim()
-    const normalizedAlternatives = questionForm.alternatives.map((item) => item.trim()).filter(Boolean)
-
-    if (!questionForm.bank.trim() || !questionForm.year.trim()) {
-      alert('Informe banca e ano da questão.')
-      return
-    }
-
-    if (!normalizedStatement) {
-      alert('Escreva o enunciado da questão.')
-      return
-    }
-
-    if (normalizedAlternatives.length < 2) {
-      alert('Adicione pelo menos duas alternativas preenchidas.')
-      return
-    }
-
-    const correctIndex = OPTION_LABELS.indexOf(questionForm.correctAlternative)
-    if (correctIndex >= normalizedAlternatives.length) {
-      alert('Escolha uma alternativa correta válida.')
-      return
-    }
-
-    const timestamp = Date.now()
-    const newQuestion = {
-      id: timestamp,
+  function addQuestion(e) {
+    e.preventDefault()
+    if (!selected) return
+    const statement = questionForm.statement.trim()
+    const alternatives = questionForm.alternatives.map((i) => i.trim()).filter(Boolean)
+    if (!questionForm.bank.trim() || !questionForm.year.trim()) return alert('Informe banca e ano da questão.')
+    if (!statement) return alert('Escreva o enunciado da questão.')
+    if (alternatives.length < 2) return alert('Adicione pelo menos duas alternativas preenchidas.')
+    if (OPT.indexOf(questionForm.correctAlternative) >= alternatives.length) return alert('Escolha uma alternativa correta válida.')
+    const now = Date.now()
+    const question = {
+      id: now,
       bank: questionForm.bank.trim(),
       year: questionForm.year.trim(),
-      statement: normalizedStatement,
+      statement,
       supportText: questionForm.supportText.trim(),
       correctAlternative: questionForm.correctAlternative,
-      alternatives: normalizedAlternatives.map((text, index) => ({
-        label: OPTION_LABELS[index],
-        text
-      })),
-      createdAt: timestamp
+      alternatives: alternatives.map((text, i) => ({ label: OPT[i], text })),
+      createdAt: now
     }
-
-    setNotebooks((previous) =>
-      previous.map((notebook) =>
-        notebook.id === selectedNotebook.id
-          ? {
-              ...notebook,
-              updatedAt: timestamp,
-              questions: [newQuestion, ...notebook.questions]
-            }
-          : notebook
-      )
-    )
-
-    resetQuestionForm()
+    setNotebooks((p) => p.map((n) => n.id === selected.id ? { ...n, updatedAt: now, questions: [question, ...n.questions] } : n))
+    setQuestionForm(emptyQuestion()); setQuestionOpen(false)
   }
 
   return (
     <>
       <section className="summary-grid">
-        <SummaryCard
-          title="Cadernos"
-          value={notebooks.length}
-          description="Coleções para organizar suas questões"
-        />
-        <SummaryCard
-          title="Questões salvas"
-          value={totalQuestions}
-          description="Itens prontos para treino futuro"
-        />
-        <SummaryCard
-          title="Cadernos ativos"
-          value={notebooksWithQuestions}
-          description="Cadernos que já possuem questões"
-        />
-        <SummaryCard
-          title="Próximo passo"
-          value={selectedNotebook ? 'Treinar' : 'Criar'}
-          description={selectedNotebook ? 'Botão de treino já disponível no caderno' : 'Abra um caderno para montar sua base'}
-          variant="alert"
-        />
+        <SummaryCard title="Cadernos" value={notebooks.length} description="Coleções para organizar suas questões" />
+        <SummaryCard title="Questões salvas" value={totalQuestions} description="Itens prontos para treino futuro" />
+        <SummaryCard title="Cadernos ativos" value={activeBooks} description="Cadernos que já possuem questões" />
+        <SummaryCard title="Modo da estante" value={shelfEdit ? 'Editar' : 'Visualizar'} description={shelfEdit ? 'Selecione um caderno para editar ou excluir' : 'Abra um caderno ou crie um novo'} variant="alert" />
       </section>
 
-      {view === 'library' ? (
-        <section className="notebooks-library-layout">
-          <Card>
-            <section className="panel-section">
-              <div className="notebooks-library-header">
-                <div>
-                  <h2 className="section-title">Estante de cadernos</h2>
-                  <p className="flashcards-helper">
-                    Cada caderno abre uma área própria, mais limpa e focada, para você gerenciar as questões.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="subject-add-button"
-                  onClick={() => setView('create')}
-                >
-                  Novo caderno
-                </button>
-              </div>
+      {view === 'library' ? <section className="notebooks-library-layout"><Card><section className="panel-section">
+        <div className="notebooks-library-header">
+          <div><h2 className="section-title">Estante de cadernos</h2><p className="flashcards-helper">Abra um caderno para estudar ou ative a edição da estante para alterar os volumes existentes.</p></div>
+          <div className="notebooks-library-actions"><button type="button" className={`plan-action-btn${shelfEdit ? ' is-active' : ''}`} onClick={() => setShelfEdit((p) => !p)}>{shelfEdit ? 'Concluir edição' : 'Editar estante'}</button></div>
+        </div>
+        <div className="notebooks-shelf">
+          {notebooks.map((n) => <button key={n.id} type="button" className={`notebook-book notebook-book--${n.color}`} onClick={() => shelfEdit ? openEditor(n) : openDetail(n.id)}>
+            <span className="notebook-book-spine" aria-hidden="true" />
+            <span className="notebook-book-topline">{shelfEdit ? 'Editar caderno' : 'Caderno'}</span>
+            <strong>{n.name}</strong>
+            {n.tag ? <span className="notebook-book-tag">{n.tag}</span> : null}
+            <p>{n.description || 'Organize aqui suas questões por tema, banca ou edital.'}</p>
+            <div className="notebook-book-meta"><span>{n.questions.length} questão(ões)</span><span>Criado em {fmt(n.createdAt)}</span><span>Última edição em {fmt(n.updatedAt)}</span></div>
+          </button>)}
+          <button type="button" className="notebook-book notebook-book-add" onClick={() => { setView('create'); setShelfEdit(false) }}>
+            <span className="notebook-book-plus" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+            <strong>Novo caderno</strong><p>Adicione outro volume ao final da estante e personalize cor, tag e descrição.</p>
+          </button>
+        </div>
+        {notebooks.length === 0 ? <p className="empty-message">Sua estante ainda está vazia. Use o caderno com `+` para criar o primeiro.</p> : null}
+      </section></Card></section> : null}
 
-              <div className="notebooks-shelf">
-                {notebooks.map((notebook, index) => (
-                  <button
-                    key={notebook.id}
-                    type="button"
-                    className={`notebook-book notebook-book--tone-${index % 4}`}
-                    onClick={() => openNotebookDetail(notebook.id)}
-                  >
-                    <span className="notebook-book-spine" aria-hidden="true" />
-                    <span className="notebook-book-topline">Caderno</span>
-                    <strong>{notebook.name}</strong>
-                    <p>{notebook.description || 'Organize aqui suas questões por tema, banca ou edital.'}</p>
-                    <div className="notebook-book-meta">
-                      <span>{notebook.questions.length} questão(ões)</span>
-                      <span>{formatNotebookUpdatedAt(notebook.updatedAt)}</span>
-                    </div>
-                  </button>
-                ))}
+      {view === 'create' ? <section className="notebook-page-layout"><Card><section className="panel-section">
+        <div className="notebook-page-header"><div><button type="button" className="notebook-back-button" onClick={goLibrary}><span className="notebook-inline-icon"><ArrowLeftIcon /></span><span>Voltar para a estante</span></button><h2 className="section-title">Criar novo caderno</h2></div></div>
+        <p className="flashcards-helper">Defina identidade visual e contexto do caderno antes de começar a adicionar questões.</p>
+        <div className="split-grid notebooks-layout">
+          <form className="flashcards-form" onSubmit={createBook}>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="notebook-name">Nome do caderno</label><input id="notebook-name" className="subject-input" type="text" placeholder="Ex: Constitucional CESPE" value={bookForm.name} onChange={(e) => setBookForm((p) => ({ ...p, name: e.target.value }))} /></div>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="notebook-tag">Tag do caderno</label><input id="notebook-tag" className="subject-input" type="text" placeholder="Ex: Reta final" value={bookForm.tag} onChange={(e) => setBookForm((p) => ({ ...p, tag: e.target.value }))} /></div>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="notebook-description">Descrição</label><textarea id="notebook-description" className="subject-input notebook-description-input" placeholder="Ex: Questões focadas em controle de constitucionalidade e organização do Estado." value={bookForm.description} onChange={(e) => setBookForm((p) => ({ ...p, description: e.target.value }))} /></div>
+            <div className="plan-field-group"><span className="plan-field-label">Cor principal</span><div className="notebook-color-picker">{COLORS.map((color) => <button key={color} type="button" className={`notebook-color-chip notebook-color-chip--${color}${bookForm.color === color ? ' is-active' : ''}`} onClick={() => setBookForm((p) => ({ ...p, color }))}><span>{color}</span></button>)}</div></div>
+            <div className="flashcards-actions"><button type="submit" className="subject-add-button">Criar caderno</button><button type="button" className="header-button header-button-secondary" onClick={goLibrary}>Cancelar</button></div>
+          </form>
+          <div className="notebook-preview-panel"><span className="notebook-book-topline">Prévia do caderno</span><div className={`notebook-book notebook-book-preview notebook-book--${bookForm.color}`}><span className="notebook-book-spine" aria-hidden="true" /><strong>{bookForm.name.trim() || 'Seu próximo caderno'}</strong>{bookForm.tag.trim() ? <span className="notebook-book-tag">{bookForm.tag.trim()}</span> : null}<p>{bookForm.description.trim() || 'A descrição aparece aqui para você validar rapidamente como ele ficará na estante.'}</p><div className="notebook-book-meta"><span>Criado em {fmt(Date.now())}</span></div></div></div>
+        </div>
+      </section></Card></section> : null}
 
-                <button
-                  type="button"
-                  className="notebook-book notebook-book-add"
-                  onClick={() => setView('create')}
-                >
-                  <span className="notebook-book-plus" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                      <path
-                        d="M12 5v14M5 12h14"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  <strong>Novo caderno</strong>
-                  <p>Crie outro volume para separar conteúdos, bancas ou frentes de estudo.</p>
-                </button>
-              </div>
+      {view === 'detail' && selected ? <section className="notebook-page-layout">
+        <Card><section className="panel-section"><div className={`notebook-detail-banner notebook-detail-banner--${selected.color}`} aria-hidden="true" /><div className="notebook-page-header"><div><button type="button" className="notebook-back-button" onClick={goLibrary}><span className="notebook-inline-icon"><ArrowLeftIcon /></span><span>Voltar para a estante</span></button><h2 className="section-title">{selected.name}</h2><div className="notebook-detail-meta">{selected.tag ? <span className="notebook-book-tag">{selected.tag}</span> : null}<span>Criado em {fmt(selected.createdAt)}</span><span>Última edição em {fmt(selected.updatedAt)}</span></div><p className="flashcards-helper">{selected.description || 'Adicione questões e use este caderno como base para os treinos futuros.'}</p></div><div className="notebook-page-actions"><button type="button" className="subject-add-button notebook-train-button" onClick={() => alert('O treinamento deste caderno será implementado posteriormente.')}><span className="notebook-inline-icon"><PlayIcon /></span><span>Iniciar treinamento</span></button><button type="button" className="plan-action-btn" onClick={() => setQuestionOpen((p) => !p)}>{questionOpen ? 'Fechar adição' : 'Adicionar questão'}</button></div></div></section></Card>
+        <Card><section className="panel-section"><div className="notebook-section-heading"><div><h3 className="section-title">Questões do caderno</h3><p className="flashcards-helper">Veja rapidamente o que já foi salvo e use o primeiro card para adicionar novas questões.</p></div></div>
+          <div className="question-cards-grid"><button type="button" className={`question-card question-card-add${questionOpen ? ' is-active' : ''}`} onClick={() => setQuestionOpen(true)}><span className="question-card-plus">+</span><strong>Adicionar nova questão</strong><p>Abra o formulário e cadastre banca, ano, enunciado, texto de apoio e alternativas.</p></button>{selected.questions.map((q, i) => <article key={q.id} className="question-card"><span className="question-card-index">Questão {i + 1}</span><div className="flashcard-tags"><span className="pill info">{q.bank}</span><span className="pill">{q.year}</span><span className="pill success">{q.alternatives.length} alternativas</span></div><p className="question-card-statement">{short(q.statement, 180)}</p>{q.supportText ? <p className="question-card-support">{short(q.supportText, 120)}</p> : <p className="question-card-support">Sem texto de apoio.</p>}</article>)}</div>
+          {selected.questions.length === 0 ? <p className="empty-message">Este caderno ainda está vazio. O card de adição já está disponível acima para começar o cadastro.</p> : null}
+        </section></Card>
+        {questionOpen ? <Card><section className="panel-section"><h2 className="section-title">Adicionar questão</h2><p className="flashcards-helper">Cadastre a questão exatamente como você quer visualizar depois no treino.</p>
+          <form className="flashcards-form" onSubmit={addQuestion}>
+            <div className="notebook-meta-grid"><div className="plan-field-group"><label className="plan-field-label" htmlFor="question-bank">Banca</label><input id="question-bank" className="subject-input" type="text" placeholder="Ex: FGV" value={questionForm.bank} onChange={(e) => setQuestionForm((p) => ({ ...p, bank: e.target.value }))} /></div><div className="plan-field-group"><label className="plan-field-label" htmlFor="question-year">Ano</label><input id="question-year" className="subject-input" type="text" inputMode="numeric" placeholder="Ex: 2025" value={questionForm.year} onChange={(e) => setQuestionForm((p) => ({ ...p, year: e.target.value }))} /></div></div>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-statement">Enunciado</label><textarea id="question-statement" className="subject-input notebook-textarea-lg" placeholder="Digite o enunciado completo da questão." value={questionForm.statement} onChange={(e) => setQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-support-text">Texto de apoio</label><textarea id="question-support-text" className="subject-input notebook-textarea-md" placeholder="Opcional. Use este campo se a questão tiver texto-base." value={questionForm.supportText} onChange={(e) => setQuestionForm((p) => ({ ...p, supportText: e.target.value }))} /></div>
+            <div className="notebook-alternatives-header"><div><h3 className="notebook-block-title">Alternativas</h3><p className="flashcards-helper">Você define quantas opções quer manter no cadastro.</p></div><button type="button" className="plan-action-btn" onClick={addAlt}>Adicionar alternativa</button></div>
+            <div className="notebook-alternatives-list">{questionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><span className="notebook-alternative-label">{OPT[i]}</span><input className="subject-input" type="text" placeholder={`Texto da alternativa ${OPT[i]}`} value={a} onChange={(e) => changeAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
+            <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-correct-alternative">Alternativa correta</label><select id="question-correct-alternative" className="subject-input" value={questionForm.correctAlternative} onChange={(e) => setQuestionForm((p) => ({ ...p, correctAlternative: e.target.value }))}>{questionForm.alternatives.map((_, i) => <option key={OPT[i]} value={OPT[i]}>{OPT[i]}</option>)}</select></div>
+            <div className="flashcards-actions"><button type="submit" className="subject-add-button">Salvar questão</button><button type="button" className="header-button header-button-secondary" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false) }}>Limpar formulário</button></div>
+          </form>
+        </section></Card> : null}
+      </section> : null}
 
-              {notebooks.length === 0 ? (
-                <p className="empty-message">
-                  Sua estante ainda está vazia. Use o caderno com `+` para criar o primeiro.
-                </p>
-              ) : null}
-            </section>
-          </Card>
-        </section>
-      ) : null}
-
-      {view === 'create' ? (
-        <section className="notebook-page-layout">
-          <Card>
-            <section className="panel-section">
-              <div className="notebook-page-header">
-                <div>
-                  <button
-                    type="button"
-                    className="notebook-back-button"
-                    onClick={goToLibrary}
-                  >
-                    Voltar para a estante
-                  </button>
-                  <h2 className="section-title">Criar novo caderno</h2>
-                </div>
-              </div>
-
-              <p className="flashcards-helper">
-                Dê um nome claro para o volume e deixe a descrição pronta para identificar rapidamente o foco desse caderno.
-              </p>
-
-              <div className="split-grid notebooks-layout">
-                <form className="flashcards-form" onSubmit={handleCreateNotebook}>
-                  <div className="plan-field-group">
-                    <label className="plan-field-label" htmlFor="notebook-name">
-                      Nome do caderno
-                    </label>
-                    <input
-                      id="notebook-name"
-                      className="subject-input"
-                      type="text"
-                      placeholder="Ex: Constitucional CESPE"
-                      value={newNotebookName}
-                      onChange={(event) => setNewNotebookName(event.target.value)}
-                    />
-                  </div>
-
-                  <div className="plan-field-group">
-                    <label className="plan-field-label" htmlFor="notebook-description">
-                      Descrição
-                    </label>
-                    <textarea
-                      id="notebook-description"
-                      className="subject-input notebook-description-input"
-                      placeholder="Ex: Questões focadas em controle de constitucionalidade e organização do Estado."
-                      value={newNotebookDescription}
-                      onChange={(event) => setNewNotebookDescription(event.target.value)}
-                    />
-                  </div>
-
-                  <div className="flashcards-actions">
-                    <button type="submit" className="subject-add-button">
-                      Criar caderno
-                    </button>
-                    <button
-                      type="button"
-                      className="header-button header-button-secondary"
-                      onClick={goToLibrary}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-
-                <div className="notebook-preview-panel">
-                  <span className="notebook-book-topline">Prévia do caderno</span>
-                  <div className="notebook-book notebook-book-preview notebook-book--tone-1">
-                    <span className="notebook-book-spine" aria-hidden="true" />
-                    <strong>{newNotebookName.trim() || 'Seu próximo caderno'}</strong>
-                    <p>
-                      {newNotebookDescription.trim() || 'A descrição aparece aqui para você validar rapidamente como ele ficará na estante.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </Card>
-        </section>
-      ) : null}
-
-      {view === 'detail' && selectedNotebook ? (
-        <section className="notebook-page-layout">
-          <Card>
-            <section className="panel-section">
-              <div className="notebook-page-header">
-                <div>
-                  <button
-                    type="button"
-                    className="notebook-back-button"
-                    onClick={goToLibrary}
-                  >
-                    Voltar para a estante
-                  </button>
-                  <h2 className="section-title">{selectedNotebook.name}</h2>
-                  <p className="flashcards-helper">
-                    {selectedNotebook.description || 'Adicione questões e use este caderno como base para os treinos futuros.'}
-                  </p>
-                </div>
-
-                <div className="notebook-page-actions">
-                  <button
-                    type="button"
-                    className="subject-add-button"
-                    onClick={() => alert('O treinamento deste caderno será implementado posteriormente.')}
-                  >
-                    Iniciar treinamento
-                  </button>
-                  <button
-                    type="button"
-                    className="plan-action-btn"
-                    onClick={() => setIsQuestionFormOpen((previous) => !previous)}
-                  >
-                    {isQuestionFormOpen ? 'Fechar adição' : 'Adicionar questão'}
-                  </button>
-                </div>
-              </div>
-            </section>
-          </Card>
-
-          <Card>
-            <section className="panel-section">
-              <div className="notebook-section-heading">
-                <div>
-                  <h3 className="section-title">Questões do caderno</h3>
-                  <p className="flashcards-helper">
-                    Veja rapidamente o que já foi salvo e use o primeiro card para adicionar novas questões.
-                  </p>
-                </div>
-              </div>
-
-              <div className="question-cards-grid">
-                <button
-                  type="button"
-                  className={`question-card question-card-add${isQuestionFormOpen ? ' is-active' : ''}`}
-                  onClick={() => setIsQuestionFormOpen(true)}
-                >
-                  <span className="question-card-plus">+</span>
-                  <strong>Adicionar nova questão</strong>
-                  <p>Abra o formulário e cadastre banca, ano, enunciado, texto de apoio e alternativas.</p>
-                </button>
-
-                {selectedNotebook.questions.map((question, index) => (
-                  <article key={question.id} className="question-card">
-                    <span className="question-card-index">Questão {index + 1}</span>
-                    <div className="flashcard-tags">
-                      <span className="pill info">{question.bank}</span>
-                      <span className="pill">{question.year}</span>
-                      <span className="pill success">{question.alternatives.length} alternativas</span>
-                    </div>
-                    <p className="question-card-statement">{truncateText(question.statement, 180)}</p>
-                    {question.supportText ? (
-                      <p className="question-card-support">{truncateText(question.supportText, 120)}</p>
-                    ) : (
-                      <p className="question-card-support">Sem texto de apoio.</p>
-                    )}
-                  </article>
-                ))}
-              </div>
-
-              {selectedNotebook.questions.length === 0 ? (
-                <p className="empty-message">
-                  Este caderno ainda está vazio. O card de adição já está disponível acima para começar o cadastro.
-                </p>
-              ) : null}
-            </section>
-          </Card>
-
-          {isQuestionFormOpen ? (
-            <Card>
-              <section className="panel-section">
-                <h2 className="section-title">Adicionar questão</h2>
-                <p className="flashcards-helper">
-                  Cadastre a questão exatamente como você quer visualizar depois no treino.
-                </p>
-
-                <form className="flashcards-form" onSubmit={handleAddQuestion}>
-                  <div className="notebook-meta-grid">
-                    <div className="plan-field-group">
-                      <label className="plan-field-label" htmlFor="question-bank">
-                        Banca
-                      </label>
-                      <input
-                        id="question-bank"
-                        className="subject-input"
-                        type="text"
-                        placeholder="Ex: FGV"
-                        value={questionForm.bank}
-                        onChange={(event) => setQuestionForm((previous) => ({ ...previous, bank: event.target.value }))}
-                      />
-                    </div>
-
-                    <div className="plan-field-group">
-                      <label className="plan-field-label" htmlFor="question-year">
-                        Ano
-                      </label>
-                      <input
-                        id="question-year"
-                        className="subject-input"
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Ex: 2025"
-                        value={questionForm.year}
-                        onChange={(event) => setQuestionForm((previous) => ({ ...previous, year: event.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="plan-field-group">
-                    <label className="plan-field-label" htmlFor="question-statement">
-                      Enunciado
-                    </label>
-                    <textarea
-                      id="question-statement"
-                      className="subject-input notebook-textarea-lg"
-                      placeholder="Digite o enunciado completo da questão."
-                      value={questionForm.statement}
-                      onChange={(event) => setQuestionForm((previous) => ({ ...previous, statement: event.target.value }))}
-                    />
-                  </div>
-
-                  <div className="plan-field-group">
-                    <label className="plan-field-label" htmlFor="question-support-text">
-                      Texto de apoio
-                    </label>
-                    <textarea
-                      id="question-support-text"
-                      className="subject-input notebook-textarea-md"
-                      placeholder="Opcional. Use este campo se a questão tiver texto-base."
-                      value={questionForm.supportText}
-                      onChange={(event) => setQuestionForm((previous) => ({ ...previous, supportText: event.target.value }))}
-                    />
-                  </div>
-
-                  <div className="notebook-alternatives-header">
-                    <div>
-                      <h3 className="notebook-block-title">Alternativas</h3>
-                      <p className="flashcards-helper">Você define quantas opções quer manter no cadastro.</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="plan-action-btn"
-                      onClick={handleAddAlternative}
-                    >
-                      Adicionar alternativa
-                    </button>
-                  </div>
-
-                  <div className="notebook-alternatives-list">
-                    {questionForm.alternatives.map((alternative, index) => (
-                      <div key={OPTION_LABELS[index]} className="notebook-alternative-row">
-                        <span className="notebook-alternative-label">{OPTION_LABELS[index]}</span>
-                        <input
-                          className="subject-input"
-                          type="text"
-                          placeholder={`Texto da alternativa ${OPTION_LABELS[index]}`}
-                          value={alternative}
-                          onChange={(event) => handleAlternativeChange(index, event.target.value)}
-                        />
-                        <button
-                          type="button"
-                          className="agenda-icon-button"
-                          onClick={() => handleRemoveAlternative(index)}
-                          aria-label={`Remover alternativa ${OPTION_LABELS[index]}`}
-                        >
-                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path
-                              d="M6 12h12"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="plan-field-group">
-                    <label className="plan-field-label" htmlFor="question-correct-alternative">
-                      Alternativa correta
-                    </label>
-                    <select
-                      id="question-correct-alternative"
-                      className="subject-input"
-                      value={questionForm.correctAlternative}
-                      onChange={(event) =>
-                        setQuestionForm((previous) => ({
-                          ...previous,
-                          correctAlternative: event.target.value
-                        }))
-                      }
-                    >
-                      {questionForm.alternatives.map((_, index) => (
-                        <option key={OPTION_LABELS[index]} value={OPTION_LABELS[index]}>
-                          {OPTION_LABELS[index]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flashcards-actions">
-                    <button type="submit" className="subject-add-button">
-                      Salvar questão
-                    </button>
-                    <button
-                      type="button"
-                      className="header-button header-button-secondary"
-                      onClick={resetQuestionForm}
-                    >
-                      Limpar formulário
-                    </button>
-                  </div>
-                </form>
-              </section>
-            </Card>
-          ) : null}
-        </section>
-      ) : null}
+      {editing ? <div className="plan-modal-overlay" onClick={closeEditor}><div className="plan-modal notebook-edit-modal" role="dialog" aria-modal="true" aria-labelledby="notebook-edit-title" onClick={(e) => e.stopPropagation()}>
+        <div className="important-date-modal-header"><div><h2 id="notebook-edit-title" className="plan-modal-title">Editar caderno</h2><p className="flashcards-helper">Ajuste dados visuais e organize melhor sua estante.</p></div><button type="button" className="modal-close-button" onClick={closeEditor} aria-label="Fechar edição do caderno">×</button></div>
+        <form className="flashcards-form" onSubmit={saveBook}>
+          <div className="notebook-edit-grid"><div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-notebook-name">Nome do caderno</label><input id="edit-notebook-name" className="subject-input" type="text" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-notebook-tag">Tag</label><input id="edit-notebook-tag" className="subject-input" type="text" value={editForm.tag} onChange={(e) => setEditForm((p) => ({ ...p, tag: e.target.value }))} /></div></div>
+          <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-notebook-description">Descrição</label><textarea id="edit-notebook-description" className="subject-input notebook-description-input" value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="plan-field-group"><span className="plan-field-label">Cor principal</span><div className="notebook-color-picker">{COLORS.map((color) => <button key={color} type="button" className={`notebook-color-chip notebook-color-chip--${color}${editForm.color === color ? ' is-active' : ''}`} onClick={() => setEditForm((p) => ({ ...p, color }))}><span>{color}</span></button>)}</div></div>
+          <div className="notebook-edit-meta"><span>Criado em {fmt(editing.createdAt)}</span><span>Última edição em {fmt(editing.updatedAt)}</span></div>
+          <div className="notebook-edit-actions"><button type="submit" className="subject-add-button">Salvar alterações</button><button type="button" className="header-button header-button-secondary" onClick={closeEditor}>Cancelar</button><button type="button" className="plan-action-btn notebook-delete-btn" onClick={deleteBook}>Excluir caderno</button></div>
+        </form>
+      </div></div> : null}
     </>
   )
 }
