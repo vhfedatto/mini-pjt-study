@@ -27,7 +27,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
   const navItems = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'agenda', label: 'Agenda' },
-    { key: 'flashcards', label: 'Treinos' },
+    { key: 'flashcards', label: 'Cadernos' },
     { key: 'important-dates', label: 'Provas' },
     { key: 'progress', label: 'Progresso' },
     { key: 'ranking', label: 'Ranking' },

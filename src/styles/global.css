@@ -3471,6 +3471,21 @@ button {
   gap: 8px;
 }
 
+.notebook-icon-action-button {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.notebook-icon-action-button .notebook-inline-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
 .notebook-shelf-settings-button {
   display: inline-flex;
   align-items: center;
