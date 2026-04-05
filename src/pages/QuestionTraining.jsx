@@ -765,37 +765,54 @@ function QuestionTraining({ notebookId, onExit }) {
                 const answerPercentage = totalAnswers > 0 ? Math.round((answerCount / totalAnswers) * 100) : 0
 
                 return (
-                  <button
+                  <div
                     key={alternative.label}
-                    type="button"
-                    className={`question-training-alternative${isSelected ? ' is-selected' : ''}${isRight ? ' is-right' : ''}${isWrongSelection ? ' is-wrong' : ''}${isCut ? ' is-cut' : ''}`}
-                    onClick={() => handleSelectAlternative(alternative.label)}
+                    className={`question-training-alternative${isSelected ? ' is-selected' : ''}${isRight ? ' is-right' : ''}${isWrongSelection ? ' is-wrong' : ''}${isCut ? ' is-cut' : ''}${submitted && alternative.comment?.trim() ? ' has-comment' : ''}`}
                   >
-                    {!submitted ? (
-                      <span className="question-training-cut-action-wrapper">
-                        <button
-                          type="button"
-                          className={`question-training-cut-action${isCut ? ' is-active' : ''}`}
-                          onClick={(event) => toggleCutAlternative(event, alternative.label)}
-                          aria-label={isCut ? `Restaurar alternativa ${alternative.displayLabel}` : `Cortar alternativa ${alternative.displayLabel}`}
-                        >
-                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path
-                              d="M6.25 7.25a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Zm0 0L18.5 19.5m-12.25-2.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM10.5 14.5l8-8"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.9"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                      </span>
+                    <div
+                      role="button"
+                      tabIndex={submitted ? -1 : 0}
+                      className="question-training-alternative-surface"
+                      onClick={() => handleSelectAlternative(alternative.label)}
+                      onKeyDown={(event) => {
+                        if (submitted) return
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          handleSelectAlternative(alternative.label)
+                        }
+                      }}
+                    >
+                      {!submitted ? (
+                        <span className="question-training-cut-action-wrapper">
+                          <button
+                            type="button"
+                            className={`question-training-cut-action${isCut ? ' is-active' : ''}`}
+                            onClick={(event) => toggleCutAlternative(event, alternative.label)}
+                            aria-label={isCut ? `Restaurar alternativa ${alternative.displayLabel}` : `Cortar alternativa ${alternative.displayLabel}`}
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                              <path
+                                d="M6.25 7.25a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Zm0 0L18.5 19.5m-12.25-2.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM10.5 14.5l8-8"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.9"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        </span>
+                      ) : null}
+                      <span className="question-training-alternative-label">{alternative.displayLabel}</span>
+                      <span className="question-training-alternative-text">{alternative.text}</span>
+                      {submitted ? <span className="question-training-alternative-stats">{answerPercentage}%</span> : null}
+                    </div>
+                    {submitted && alternative.comment?.trim() ? (
+                      <div className="question-training-alternative-comment">
+                        {alternative.comment}
+                      </div>
                     ) : null}
-                    <span className="question-training-alternative-label">{alternative.displayLabel}</span>
-                    <span className="question-training-alternative-text">{alternative.text}</span>
-                    {submitted ? <span className="question-training-alternative-stats">{answerPercentage}%</span> : null}
-                  </button>
+                  </div>
                 )
               })}
             </div>

@@ -9,7 +9,15 @@ const OPT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 const COLORS = ['terracota', 'oceano', 'oliva', 'ameixa', 'grafite', 'ambar', 'vinho', 'esmeralda', 'anil']
 
 const emptyNotebook = () => ({ name: '', description: '', tag: '', color: COLORS[0] })
-const emptyQuestion = () => ({ bank: '', year: '', statement: '', supportText: '', alternatives: ['', '', '', ''], correctAlternative: 'A' })
+const createEmptyAlternative = () => ({ text: '', comment: '' })
+const emptyQuestion = () => ({
+  bank: '',
+  year: '',
+  statement: '',
+  supportText: '',
+  alternatives: [createEmptyAlternative(), createEmptyAlternative(), createEmptyAlternative(), createEmptyAlternative()],
+  correctAlternative: 'A'
+})
 
 function fmt(value) {
   try {
@@ -184,6 +192,21 @@ function CheckBadgeIcon() {
   )
 }
 
+function CommentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M7.5 5.25h9A3.25 3.25 0 0 1 19.75 8.5v5A3.25 3.25 0 0 1 16.5 16.75H11l-3.8 3.1c-.48.39-1.2.05-1.2-.57v-2.53A3.25 3.25 0 0 1 3.75 13.5v-5A3.25 3.25 0 0 1 7.5 5.25Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function normalizeImportedNotebooks(importedNotebooks) {
   const baseTime = Date.now()
 
@@ -254,6 +277,8 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const [dragOverNotebookId, setDragOverNotebookId] = useState(null)
   const [draggedQuestionId, setDraggedQuestionId] = useState(null)
   const [dragOverQuestionId, setDragOverQuestionId] = useState(null)
+  const [alternativeCommentEditor, setAlternativeCommentEditor] = useState(null)
+  const [alternativeCommentDraft, setAlternativeCommentDraft] = useState('')
 
   useEffect(() => { localStorage.setItem(KEY, JSON.stringify(notebooks)) }, [notebooks])
 
@@ -319,7 +344,48 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const openDetail = (id) => { setSelectedId(id); setView('detail'); setQuestionOpen(false); setShelfEdit(false); setReportOpen(false) }
   const openEditor = (book) => { setEditingId(book.id); setEditForm({ name: book.name, description: book.description, tag: book.tag, color: book.color }) }
   const closeEditor = () => { setEditingId(null); setEditForm(emptyNotebook()) }
-  const closeQuestionEditor = () => { setEditingQuestionId(null); setEditingQuestionForm(emptyQuestion()) }
+  const closeQuestionEditor = () => { setEditingQuestionId(null); setEditingQuestionForm(emptyQuestion()); setAlternativeCommentEditor(null); setAlternativeCommentDraft('') }
+
+  function getFormAlternative(formType, index) {
+    const form = formType === 'edit' ? editingQuestionForm : questionForm
+    return form.alternatives[index] ?? createEmptyAlternative()
+  }
+
+  function openAlternativeCommentEditor(formType, index) {
+    const alternative = getFormAlternative(formType, index)
+    setAlternativeCommentEditor({ formType, index })
+    setAlternativeCommentDraft(alternative.comment || '')
+  }
+
+  function closeAlternativeCommentEditor() {
+    setAlternativeCommentEditor(null)
+    setAlternativeCommentDraft('')
+  }
+
+  function updateAlternativeComment(formType, index, comment) {
+    if (formType === 'edit') {
+      setEditingQuestionForm((previous) => ({
+        ...previous,
+        alternatives: previous.alternatives.map((alternative, alternativeIndex) =>
+          alternativeIndex === index ? { ...alternative, comment } : alternative
+        )
+      }))
+      return
+    }
+
+    setQuestionForm((previous) => ({
+      ...previous,
+      alternatives: previous.alternatives.map((alternative, alternativeIndex) =>
+        alternativeIndex === index ? { ...alternative, comment } : alternative
+      )
+    }))
+  }
+
+  function saveAlternativeComment() {
+    if (!alternativeCommentEditor) return
+    updateAlternativeComment(alternativeCommentEditor.formType, alternativeCommentEditor.index, alternativeCommentDraft)
+    closeAlternativeCommentEditor()
+  }
 
   function openQuestionEditor(question) {
     setEditingQuestionId(question.id)
@@ -328,7 +394,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       year: question.year,
       statement: question.statement,
       supportText: question.supportText || '',
-      alternatives: question.alternatives.map((item) => item.text),
+      alternatives: question.alternatives.map((item) => ({ text: item.text, comment: item.comment || '' })),
       correctAlternative: question.correctAlternative
     })
   }
@@ -360,7 +426,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     closeEditor()
   }
 
-  function addAlt() { setQuestionForm((p) => ({ ...p, alternatives: [...p.alternatives, ''] })) }
+  function addAlt() { setQuestionForm((p) => ({ ...p, alternatives: [...p.alternatives, createEmptyAlternative()] })) }
   function removeAlt(i) {
     setQuestionForm((p) => {
       if (p.alternatives.length <= 2) return p
@@ -368,8 +434,17 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       const correctAlternative = OPT[Math.max(0, Math.min(OPT.indexOf(p.correctAlternative), alternatives.length - 1))]
       return { ...p, alternatives, correctAlternative }
     })
+    if (alternativeCommentEditor?.formType === 'create') {
+      if (alternativeCommentEditor.index === i) closeAlternativeCommentEditor()
+      else if (alternativeCommentEditor.index > i) setAlternativeCommentEditor((previous) => ({ ...previous, index: previous.index - 1 }))
+    }
   }
-  function changeAlt(i, value) { setQuestionForm((p) => ({ ...p, alternatives: p.alternatives.map((a, idx) => idx === i ? value : a) })) }
+  function changeAlt(i, value) {
+    setQuestionForm((p) => ({
+      ...p,
+      alternatives: p.alternatives.map((alternative, idx) => idx === i ? { ...alternative, text: value } : alternative)
+    }))
+  }
 
   function autoResizeTextarea(event) {
     event.currentTarget.style.height = 'auto'
@@ -380,7 +455,9 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     e.preventDefault()
     if (!selected) return
     const statement = questionForm.statement.trim()
-    const alternatives = questionForm.alternatives.map((i) => i.trim()).filter(Boolean)
+    const alternatives = questionForm.alternatives
+      .map((alternative, index) => ({ ...alternative, text: alternative.text.trim(), label: OPT[index] }))
+      .filter((alternative) => alternative.text)
     if (!questionForm.bank.trim() || !questionForm.year.trim()) return alert('Informe banca e ano da questão.')
     if (!statement) return alert('Escreva o enunciado da questão.')
     if (alternatives.length < 2) return alert('Adicione pelo menos duas alternativas preenchidas.')
@@ -395,19 +472,26 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       correctAlternative: questionForm.correctAlternative,
       correctCount: 0,
       wrongCount: 0,
-      alternatives: alternatives.map((text, i) => ({ label: OPT[i], text })),
+      alternatives: alternatives.map((alternative) => ({
+        label: alternative.label,
+        text: alternative.text,
+        comment: alternative.comment.trim()
+      })),
       createdAt: now
     }
     setNotebooks((p) => p.map((n) => n.id === selected.id ? { ...n, updatedAt: now, questions: [...n.questions, question] } : n))
-    setQuestionForm(emptyQuestion()); setQuestionOpen(false)
+    setQuestionForm(emptyQuestion()); setQuestionOpen(false); closeAlternativeCommentEditor()
   }
 
   function editQuestionAlt(i, value) {
-    setEditingQuestionForm((p) => ({ ...p, alternatives: p.alternatives.map((a, idx) => idx === i ? value : a) }))
+    setEditingQuestionForm((p) => ({
+      ...p,
+      alternatives: p.alternatives.map((alternative, idx) => idx === i ? { ...alternative, text: value } : alternative)
+    }))
   }
 
   function addQuestionEditorAlt() {
-    setEditingQuestionForm((p) => ({ ...p, alternatives: [...p.alternatives, ''] }))
+    setEditingQuestionForm((p) => ({ ...p, alternatives: [...p.alternatives, createEmptyAlternative()] }))
   }
 
   function removeQuestionEditorAlt(i) {
@@ -417,13 +501,19 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       const correctAlternative = OPT[Math.max(0, Math.min(OPT.indexOf(p.correctAlternative), alternatives.length - 1))]
       return { ...p, alternatives, correctAlternative }
     })
+    if (alternativeCommentEditor?.formType === 'edit') {
+      if (alternativeCommentEditor.index === i) closeAlternativeCommentEditor()
+      else if (alternativeCommentEditor.index > i) setAlternativeCommentEditor((previous) => ({ ...previous, index: previous.index - 1 }))
+    }
   }
 
   function saveQuestionEdit(e) {
     e.preventDefault()
     if (!selected || !editingQuestion) return
     const statement = editingQuestionForm.statement.trim()
-    const alternatives = editingQuestionForm.alternatives.map((i) => i.trim()).filter(Boolean)
+    const alternatives = editingQuestionForm.alternatives
+      .map((alternative, index) => ({ ...alternative, text: alternative.text.trim(), label: OPT[index] }))
+      .filter((alternative) => alternative.text)
     if (!editingQuestionForm.bank.trim() || !editingQuestionForm.year.trim()) return alert('Informe banca e ano da questão.')
     if (!statement) return alert('Escreva o enunciado da questão.')
     if (alternatives.length < 2) return alert('Adicione pelo menos duas alternativas preenchidas.')
@@ -443,7 +533,11 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
                 correctAlternative: editingQuestionForm.correctAlternative,
                 correctCount: question.correctCount ?? 0,
                 wrongCount: question.wrongCount ?? 0,
-                alternatives: alternatives.map((text, i) => ({ label: OPT[i], text }))
+                alternatives: alternatives.map((alternative) => ({
+                  label: alternative.label,
+                  text: alternative.text,
+                  comment: alternative.comment.trim()
+                }))
               }
             : question)
         }
@@ -752,27 +846,32 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
         </form>
       </div></div> : null}
 
-      {editingQuestion ? <div className="plan-modal-overlay" onClick={closeQuestionEditor}><div className="plan-modal notebook-edit-modal" role="dialog" aria-modal="true" aria-labelledby="question-edit-title" onClick={(e) => e.stopPropagation()}>
+      {editingQuestion ? <div className="plan-modal-overlay" onClick={closeQuestionEditor}><div className="plan-modal notebook-edit-modal notebook-question-modal" role="dialog" aria-modal="true" aria-labelledby="question-edit-title" onClick={(e) => e.stopPropagation()}>
         <div className="important-date-modal-header"><div><h2 id="question-edit-title" className="plan-modal-title">Editar questão</h2><p className="flashcards-helper">Ajuste os dados da questão sem sair do caderno.</p></div><div className="notebook-question-modal-header-actions"><button type="button" className="plan-action-btn notebook-delete-btn notebook-delete-btn-compact" onClick={deleteQuestion}>Excluir questão</button><button type="button" className="modal-close-button" onClick={closeQuestionEditor} aria-label="Fechar edição da questão">×</button></div></div>
         <form className="flashcards-form" onSubmit={saveQuestionEdit}>
           <div className="notebook-meta-grid"><div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-bank">Banca</label><input id="edit-question-bank" className="subject-input" type="text" value={editingQuestionForm.bank} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, bank: e.target.value }))} /></div><div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-year">Ano</label><input id="edit-question-year" className="subject-input" type="text" value={editingQuestionForm.year} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, year: e.target.value }))} /></div></div>
           <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-statement">Enunciado</label><textarea id="edit-question-statement" className="subject-input notebook-textarea-lg notebook-textarea-autogrow" rows="1" value={editingQuestionForm.statement} onInput={autoResizeTextarea} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
           <div className="plan-field-group"><label className="plan-field-label" htmlFor="edit-question-support-text">Texto de apoio</label><textarea id="edit-question-support-text" className="subject-input notebook-textarea-md" value={editingQuestionForm.supportText} onChange={(e) => setEditingQuestionForm((p) => ({ ...p, supportText: e.target.value }))} /></div>
           <div className="notebook-alternatives-header"><div><h3 className="notebook-block-title">Alternativas</h3><p className="flashcards-helper">Você pode ajustar quantas alternativas deseja manter.</p></div><button type="button" className="plan-action-btn" onClick={addQuestionEditorAlt}>Adicionar alternativa</button></div>
-          <div className="notebook-alternatives-list">{editingQuestionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><button type="button" className={`notebook-alternative-label${editingQuestionForm.correctAlternative === OPT[i] ? ' is-correct' : ''}`} onClick={() => setEditingQuestionForm((p) => ({ ...p, correctAlternative: OPT[i] }))} aria-label={`Definir alternativa ${OPT[i]} como correta`}>{OPT[i]}</button><input className="subject-input" type="text" value={a} onChange={(e) => editQuestionAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeQuestionEditorAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
+          <div className="notebook-alternatives-list">{editingQuestionForm.alternatives.map((alternative, i) => <div key={OPT[i]} className="notebook-alternative-row"><button type="button" className={`notebook-alternative-label${editingQuestionForm.correctAlternative === OPT[i] ? ' is-correct' : ''}`} onClick={() => setEditingQuestionForm((p) => ({ ...p, correctAlternative: OPT[i] }))} aria-label={`Definir alternativa ${OPT[i]} como correta`}>{OPT[i]}</button><input className="subject-input" type="text" value={alternative.text} onChange={(e) => editQuestionAlt(i, e.target.value)} /><button type="button" className={`agenda-icon-button notebook-alternative-comment-button${alternative.comment?.trim() ? ' has-comment' : ''}`} onClick={() => openAlternativeCommentEditor('edit', i)} aria-label={`Adicionar comentario na alternativa ${OPT[i]}`}><CommentIcon /></button><button type="button" className="agenda-icon-button" onClick={() => removeQuestionEditorAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
           <div className="flashcards-actions overlay-question-actions"><button type="submit" className="subject-add-button">Salvar alterações</button><button type="button" className="header-button header-button-secondary" onClick={closeQuestionEditor}>Cancelar</button></div>
         </form>
       </div></div> : null}
-      {questionOpen ? <div className="plan-modal-overlay" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false) }}><div className="plan-modal notebook-edit-modal" role="dialog" aria-modal="true" aria-labelledby="question-create-title" onClick={(e) => e.stopPropagation()}>
-        <div className="important-date-modal-header"><div><h2 id="question-create-title" className="plan-modal-title">Adicionar questão</h2><p className="flashcards-helper">Cadastre a questão exatamente como você quer visualizar depois no treino.</p></div><button type="button" className="modal-close-button" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false) }} aria-label="Fechar criação da questão">×</button></div>
+      {questionOpen ? <div className="plan-modal-overlay" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false); closeAlternativeCommentEditor() }}><div className="plan-modal notebook-edit-modal notebook-question-modal" role="dialog" aria-modal="true" aria-labelledby="question-create-title" onClick={(e) => e.stopPropagation()}>
+        <div className="important-date-modal-header"><div><h2 id="question-create-title" className="plan-modal-title">Adicionar questão</h2><p className="flashcards-helper">Cadastre a questão exatamente como você quer visualizar depois no treino.</p></div><button type="button" className="modal-close-button" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false); closeAlternativeCommentEditor() }} aria-label="Fechar criação da questão">×</button></div>
         <form className="flashcards-form" onSubmit={addQuestion}>
           <div className="notebook-meta-grid"><div className="plan-field-group"><label className="plan-field-label" htmlFor="question-bank">Banca</label><input id="question-bank" className="subject-input" type="text" placeholder="Ex: FGV" value={questionForm.bank} onChange={(e) => setQuestionForm((p) => ({ ...p, bank: e.target.value }))} /></div><div className="plan-field-group"><label className="plan-field-label" htmlFor="question-year">Ano</label><input id="question-year" className="subject-input" type="text" inputMode="numeric" placeholder="Ex: 2025" value={questionForm.year} onChange={(e) => setQuestionForm((p) => ({ ...p, year: e.target.value }))} /></div></div>
           <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-statement">Enunciado</label><textarea id="question-statement" className="subject-input notebook-textarea-lg notebook-textarea-autogrow" rows="1" placeholder="Digite o enunciado completo da questão." value={questionForm.statement} onInput={autoResizeTextarea} onChange={(e) => setQuestionForm((p) => ({ ...p, statement: e.target.value }))} /></div>
           <div className="plan-field-group"><label className="plan-field-label" htmlFor="question-support-text">Texto de apoio</label><textarea id="question-support-text" className="subject-input notebook-textarea-md" placeholder="Opcional. Use este campo se a questão tiver texto-base." value={questionForm.supportText} onChange={(e) => setQuestionForm((p) => ({ ...p, supportText: e.target.value }))} /></div>
           <div className="notebook-alternatives-header"><div><h3 className="notebook-block-title">Alternativas</h3><p className="flashcards-helper">Você define quantas opções quer manter no cadastro.</p></div><button type="button" className="plan-action-btn" onClick={addAlt}>Adicionar alternativa</button></div>
-          <div className="notebook-alternatives-list">{questionForm.alternatives.map((a, i) => <div key={OPT[i]} className="notebook-alternative-row"><button type="button" className={`notebook-alternative-label${questionForm.correctAlternative === OPT[i] ? ' is-correct' : ''}`} onClick={() => setQuestionForm((p) => ({ ...p, correctAlternative: OPT[i] }))} aria-label={`Definir alternativa ${OPT[i]} como correta`}>{OPT[i]}</button><input className="subject-input" type="text" placeholder={`Texto da alternativa ${OPT[i]}`} value={a} onChange={(e) => changeAlt(i, e.target.value)} /><button type="button" className="agenda-icon-button" onClick={() => removeAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
-          <div className="flashcards-actions overlay-question-actions"><button type="submit" className="subject-add-button">Salvar questão</button><button type="button" className="header-button header-button-secondary" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false) }}>Cancelar</button></div>
+          <div className="notebook-alternatives-list">{questionForm.alternatives.map((alternative, i) => <div key={OPT[i]} className="notebook-alternative-row"><button type="button" className={`notebook-alternative-label${questionForm.correctAlternative === OPT[i] ? ' is-correct' : ''}`} onClick={() => setQuestionForm((p) => ({ ...p, correctAlternative: OPT[i] }))} aria-label={`Definir alternativa ${OPT[i]} como correta`}>{OPT[i]}</button><input className="subject-input" type="text" placeholder={`Texto da alternativa ${OPT[i]}`} value={alternative.text} onChange={(e) => changeAlt(i, e.target.value)} /><button type="button" className={`agenda-icon-button notebook-alternative-comment-button${alternative.comment?.trim() ? ' has-comment' : ''}`} onClick={() => openAlternativeCommentEditor('create', i)} aria-label={`Adicionar comentario na alternativa ${OPT[i]}`}><CommentIcon /></button><button type="button" className="agenda-icon-button" onClick={() => removeAlt(i)} aria-label={`Remover alternativa ${OPT[i]}`}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 12h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>)}</div>
+          <div className="flashcards-actions overlay-question-actions"><button type="submit" className="subject-add-button">Salvar questão</button><button type="button" className="header-button header-button-secondary" onClick={() => { setQuestionForm(emptyQuestion()); setQuestionOpen(false); closeAlternativeCommentEditor() }}>Cancelar</button></div>
         </form>
+      </div></div> : null}
+      {alternativeCommentEditor ? <div className="plan-modal-overlay" onClick={closeAlternativeCommentEditor}><div className="plan-modal notebook-alternative-comment-modal" role="dialog" aria-modal="true" aria-labelledby="alternative-comment-title" onClick={(e) => e.stopPropagation()}>
+        <div className="important-date-modal-header"><div><h2 id="alternative-comment-title" className="plan-modal-title">Comentário da alternativa {OPT[alternativeCommentEditor.index]}</h2><p className="flashcards-helper">Explique por que esta alternativa está certa ou errada. Esse texto aparece no treino após a resposta.</p></div><button type="button" className="modal-close-button" onClick={closeAlternativeCommentEditor} aria-label="Fechar comentário da alternativa">×</button></div>
+        <div className="plan-field-group"><label className="plan-field-label" htmlFor="alternative-comment-input">Comentário</label><textarea id="alternative-comment-input" className="subject-input notebook-alternative-comment-input" value={alternativeCommentDraft} onChange={(e) => setAlternativeCommentDraft(e.target.value)} placeholder="Ex: esta alternativa erra ao confundir conceito, competência ou exceção cobrada pela banca." /></div>
+        <div className="flashcards-actions overlay-question-actions"><button type="button" className="subject-add-button" onClick={saveAlternativeComment}>Salvar comentário</button><button type="button" className="header-button header-button-secondary" onClick={closeAlternativeCommentEditor}>Cancelar</button></div>
       </div></div> : null}
       {reportOpen && selected ? <div className="plan-modal-overlay" onClick={() => setReportOpen(false)}><div className="plan-modal notebook-report-modal" role="dialog" aria-modal="true" aria-labelledby="notebook-report-title" onClick={(e) => e.stopPropagation()}>
         <div className="important-date-modal-header"><div><h2 id="notebook-report-title" className="plan-modal-title">Relatório de tentativas</h2><p className="flashcards-helper">Histórico completo das suas resoluções no caderno {selected.name}.</p></div><button type="button" className="modal-close-button" onClick={() => setReportOpen(false)} aria-label="Fechar relatório de tentativas">×</button></div>
