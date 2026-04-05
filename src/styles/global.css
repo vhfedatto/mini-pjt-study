@@ -743,14 +743,17 @@ body {
 
 .plan-modal-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(18, 8, 8, 0.54);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -758,6 +761,18 @@ body {
 html:has(.plan-modal-overlay),
 body:has(.plan-modal-overlay) {
   overflow: hidden;
+}
+
+html.modal-scroll-locked,
+body.modal-scroll-locked {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.modal-scroll-locked .dashboard-layout,
+body.modal-scroll-locked .dashboard-content {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .plan-modal {
@@ -3496,6 +3511,7 @@ button {
   width: min(760px, 100%);
   max-height: min(88vh, 920px);
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 620px;
   background:
     radial-gradient(circle at top right, rgba(61, 9, 9, 0.08), transparent 24%),
@@ -3620,6 +3636,13 @@ button {
 .notebook-settings-selection-copy {
   display: grid;
   gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.notebook-settings-selection-copy strong,
+.notebook-settings-selection-copy small {
+  display: block;
 }
 
 .notebook-settings-selection-badge {
@@ -3679,26 +3702,6 @@ button {
   background: color-mix(in srgb, var(--panel) 86%, white 14%);
 }
 
-.notebook-question-settings-selection-list {
-  grid-template-columns: 1fr;
-  max-height: 360px;
-}
-
-.notebook-question-settings-selection-app {
-  grid-template-columns: auto minmax(0, 1fr);
-  justify-items: start;
-  align-items: center;
-  text-align: left;
-}
-
-.notebook-question-settings-selection-app-icon {
-  background: linear-gradient(135deg, #3d0909, #7a3e2f);
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  box-shadow: 0 12px 22px rgba(61, 9, 9, 0.18);
-}
-
 .notebook-settings-import-preview {
   display: grid;
   gap: 16px;
@@ -3719,6 +3722,94 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.notebook-question-settings-list {
+  display: grid;
+  gap: 12px;
+}
+
+.notebook-question-settings-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.76);
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.notebook-question-settings-item:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  box-shadow: 0 14px 24px rgba(61, 9, 9, 0.08);
+}
+
+.notebook-question-settings-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.notebook-question-settings-item.is-selected {
+  border-color: rgba(61, 9, 9, 0.4);
+  background: linear-gradient(180deg, rgba(255, 229, 206, 0.96), rgba(255, 214, 181, 0.96));
+  box-shadow: 0 18px 30px rgba(211, 136, 81, 0.18);
+}
+
+.notebook-question-settings-item-index {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #3d0909, #7a3e2f);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex: 0 0 auto;
+  box-shadow: 0 12px 22px rgba(61, 9, 9, 0.18);
+}
+
+.notebook-question-settings-item-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.notebook-question-settings-item-copy strong {
+  color: var(--text-primary);
+}
+
+.notebook-question-settings-item-copy small {
+  color: var(--text-muted);
+}
+
+.notebook-question-settings-item-copy p {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.notebook-question-settings-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #1f6f3e;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 18px rgba(31, 111, 62, 0.22);
+}
+
+.notebook-question-settings-check svg {
+  width: 16px;
+  height: 16px;
 }
 
 .notebook-settings-switch-card {
