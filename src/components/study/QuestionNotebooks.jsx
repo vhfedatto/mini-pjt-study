@@ -295,8 +295,10 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const [settingsContext, setSettingsContext] = useState('library')
   const [settingsMode, setSettingsMode] = useState('export')
   const [exportSelection, setExportSelection] = useState([])
+  const [questionExportSelection, setQuestionExportSelection] = useState([])
   const [includeReportsOnExport, setIncludeReportsOnExport] = useState(true)
   const [settingsStatus, setSettingsStatus] = useState('')
+  const [pendingQuestionImport, setPendingQuestionImport] = useState(null)
   const [draggedNotebookId, setDraggedNotebookId] = useState(null)
   const [dragOverNotebookId, setDragOverNotebookId] = useState(null)
   const [draggedQuestionId, setDraggedQuestionId] = useState(null)
@@ -680,12 +682,15 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     setSettingsContext('notebook')
     setSettingsMode('export')
     setSettingsStatus('')
+    setPendingQuestionImport(null)
+    setQuestionExportSelection((selected.questions ?? []).map((question) => question.id))
     setSettingsOpen(true)
   }
 
   function closeNotebookSettings() {
     setSettingsOpen(false)
     setSettingsStatus('')
+    setPendingQuestionImport(null)
   }
 
   function toggleExportSelection(notebookId) {
@@ -762,6 +767,11 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
 
   function handleExportSelectedNotebookQuestions() {
     if (!selected) return
+    const selectedQuestions = (selected.questions ?? []).filter((question) => questionExportSelection.includes(question.id))
+    if (selectedQuestions.length === 0) {
+      setSettingsStatus('Selecione pelo menos uma questão para exportar.')
+      return
+    }
     if ((selected.questions?.length ?? 0) === 0) {
       setSettingsStatus('Este caderno ainda não tem questões para exportar.')
       return
@@ -773,7 +783,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       version: 1,
       exportedAt: new Date().toISOString(),
       notebookName: selected.name,
-      questions: (selected.questions ?? []).map((question) => ({
+      questions: selectedQuestions.map((question) => ({
         bank: question.bank,
         year: question.year,
         statement: question.statement,
@@ -794,6 +804,14 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     link.click()
     URL.revokeObjectURL(url)
     setSettingsStatus('Questões exportadas com sucesso.')
+  }
+
+  function toggleQuestionExportSelection(questionId) {
+    setQuestionExportSelection((previous) =>
+      previous.includes(questionId)
+        ? previous.filter((id) => id !== questionId)
+        : [...previous, questionId]
+    )
   }
 
   function handleImportNotebookQuestions(event) {
@@ -823,16 +841,12 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
         }
 
         const normalizedQuestions = normalizeImportedQuestions(importedQuestions)
-        setNotebooks((previous) => previous.map((notebook) =>
-          notebook.id === selected.id
-            ? {
-                ...notebook,
-                updatedAt: Date.now(),
-                questions: [...(notebook.questions ?? []), ...normalizedQuestions]
-              }
-            : notebook
-        ))
-        setSettingsStatus(`${normalizedQuestions.length} questão(ões) importada(s) com sucesso.`)
+        setPendingQuestionImport({
+          fileName: file.name,
+          notebookName: parsed?.notebookName ?? '',
+          questions: normalizedQuestions
+        })
+        setSettingsStatus(`Arquivo pronto para importação: ${normalizedQuestions.length} questão(ões).`)
       } catch {
         setSettingsStatus('Não consegui importar este arquivo de questões.')
       } finally {
@@ -841,6 +855,41 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     }
 
     reader.readAsText(file)
+  }
+
+  function commitNotebookQuestionImport(strategy) {
+    if (!selected || !pendingQuestionImport) return
+
+    const nextQuestions = pendingQuestionImport.questions
+    const nextSelection = strategy === 'replace'
+      ? nextQuestions.map((question) => question.id)
+      : [...(selected.questions ?? []).map((question) => question.id), ...nextQuestions.map((question) => question.id)]
+    setNotebooks((previous) => previous.map((notebook) => {
+      if (notebook.id !== selected.id) return notebook
+
+      return {
+        ...notebook,
+        updatedAt: Date.now(),
+        attempts: strategy === 'replace' ? [] : notebook.attempts ?? [],
+        questions: strategy === 'replace' ? nextQuestions : [...(notebook.questions ?? []), ...nextQuestions]
+      }
+    }))
+
+    if (strategy === 'replace') {
+      const sessions = JSON.parse(localStorage.getItem(TRAINING_RESUME_KEY) || '{}')
+      if (sessions && typeof sessions === 'object') {
+        delete sessions[String(selected.id)]
+        localStorage.setItem(TRAINING_RESUME_KEY, JSON.stringify(sessions))
+      }
+    }
+
+    setPendingQuestionImport(null)
+    setQuestionExportSelection(nextSelection)
+    setSettingsStatus(
+      strategy === 'replace'
+        ? `${nextQuestions.length} questão(ões) importada(s) substituindo o conteúdo anterior do caderno.`
+        : `${nextQuestions.length} questão(ões) importada(s) e mesclada(s) ao caderno.`
+    )
   }
 
   function deleteAttempt(attemptId) {
@@ -1000,10 +1049,10 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
         {settingsMode === 'export'
           ? settingsContext === 'library'
             ? <div className="notebook-settings-body"><div className="notebook-settings-hero"><div><h3 className="section-title">Exportar cadernos</h3><p className="flashcards-helper">Monte um arquivo com um ou vários cadernos e leve também os relatórios, se quiser.</p></div><label className="notebook-settings-switch-card"><span><strong>Incluir relatórios</strong><small>Leva tentativas e estatísticas do relatório junto com os cadernos.</small></span><button type="button" role="switch" aria-checked={includeReportsOnExport} className={`notebook-settings-switch${includeReportsOnExport ? ' is-active' : ''}`} onClick={() => setIncludeReportsOnExport((previous) => !previous)}><span /></button></label></div><div><h3 className="section-title">Selecione os cadernos</h3><p className="flashcards-helper">Nenhum caderno começa marcado. Escolha manualmente o que deseja exportar.</p></div><div className="notebook-settings-selection-list">{notebooks.map((notebook) => <label key={notebook.id} className={`notebook-settings-selection-item${exportSelection.includes(notebook.id) ? ' is-selected' : ''}`}><input type="checkbox" checked={exportSelection.includes(notebook.id)} onChange={() => toggleExportSelection(notebook.id)} /><span className="notebook-settings-selection-app">{exportSelection.includes(notebook.id) ? <span className="notebook-settings-selection-badge"><CheckBadgeIcon /></span> : null}<span className={`notebook-settings-selection-app-icon notebook-settings-selection-app-icon--${notebook.color}`} aria-hidden="true">{notebook.name.slice(0, 1).toUpperCase()}</span><span className="notebook-settings-selection-copy"><strong>{notebook.name}</strong><small>{notebook.questions.length} questão(ões){(notebook.attempts?.length ?? 0) > 0 ? ` • ${notebook.attempts.length} relatório(s)` : ''}</small></span></span></label>)}</div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportNotebooks}>Exportar caderno(s)</button></div></div>
-            : <div className="notebook-settings-body notebook-settings-body-import"><div className="notebook-settings-import-card"><div><h3 className="section-title">Exportar questões do caderno</h3><p className="flashcards-helper">Gere um arquivo apenas com as questões deste caderno. Relatórios e estatísticas não entram no export.</p></div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportSelectedNotebookQuestions}>Exportar questões</button></div></div></div>
+            : <div className="notebook-settings-body"><div className="notebook-settings-import-card"><div><h3 className="section-title">Exportar questões do caderno</h3><p className="flashcards-helper">Escolha quais questões entram no arquivo. Relatórios e estatísticas não entram no export.</p></div></div><div><h3 className="section-title">Selecione as questões</h3><p className="flashcards-helper">Questões marcadas serão exportadas para o arquivo.</p></div><div className="notebook-settings-selection-list notebook-question-settings-selection-list">{(selected?.questions ?? []).map((question, index) => <label key={question.id} className={`notebook-settings-selection-item${questionExportSelection.includes(question.id) ? ' is-selected' : ''}`}><input type="checkbox" checked={questionExportSelection.includes(question.id)} onChange={() => toggleQuestionExportSelection(question.id)} /><span className="notebook-settings-selection-app notebook-question-settings-selection-app">{questionExportSelection.includes(question.id) ? <span className="notebook-settings-selection-badge"><CheckBadgeIcon /></span> : null}<span className="notebook-settings-selection-app-icon notebook-question-settings-selection-app-icon" aria-hidden="true">{index + 1}</span><span className="notebook-settings-selection-copy"><strong>Questão {index + 1}</strong><small>{question.bank} • {question.year} • {short(question.statement, 105)}</small></span></span></label>)}</div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportSelectedNotebookQuestions}>Exportar questões</button></div></div>
           : settingsContext === 'library'
             ? <div className="notebook-settings-body notebook-settings-body-import"><div className="notebook-settings-import-card"><div><h3 className="section-title">Importar arquivo de caderno</h3><p className="flashcards-helper">Escolha um arquivo exportado da estante. Os cadernos serão adicionados automaticamente com questões e relatórios, se existirem.</p></div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleOpenNotebookImport}>Selecionar arquivo</button></div></div></div>
-            : <div className="notebook-settings-body notebook-settings-body-import"><div className="notebook-settings-import-card"><div><h3 className="section-title">Importar questões para este caderno</h3><p className="flashcards-helper">Escolha um arquivo de questões. Se o arquivo for um backup completo de caderno, a importação será recusada.</p></div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleOpenNotebookImport}>Selecionar arquivo</button></div></div></div>}
+            : <div className="notebook-settings-body notebook-settings-body-import"><div className="notebook-settings-import-card"><div><h3 className="section-title">Importar questões para este caderno</h3><p className="flashcards-helper">Escolha um arquivo de questões. Se o arquivo for um backup completo de caderno, a importação será recusada.</p></div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleOpenNotebookImport}>Selecionar arquivo</button></div></div>{pendingQuestionImport ? <div className="notebook-settings-import-preview"><div><h3 className="section-title">Prévia da importação</h3><p className="flashcards-helper">{pendingQuestionImport.fileName}{pendingQuestionImport.notebookName ? ` • origem: ${pendingQuestionImport.notebookName}` : ''}</p></div><div className="notebook-settings-import-stats"><article className="notebook-report-stat-card"><span>Serão adicionadas</span><strong>{pendingQuestionImport.questions.length}</strong></article><article className="notebook-report-stat-card"><span>Já existem no caderno</span><strong>{selected?.questions?.length ?? 0}</strong></article></div><div className="notebook-settings-selection-list notebook-question-settings-selection-list">{pendingQuestionImport.questions.map((question, index) => <article key={question.id} className="notebook-settings-selection-item is-selected is-static"><span className="notebook-settings-selection-app notebook-question-settings-selection-app"><span className="notebook-settings-selection-app-icon notebook-question-settings-selection-app-icon" aria-hidden="true">{index + 1}</span><span className="notebook-settings-selection-copy"><strong>{question.bank} • {question.year}</strong><small>{short(question.statement, 120)}</small></span></span></article>)}</div><div className="question-import-choice-actions"><button type="button" className="subject-add-button" onClick={() => commitNotebookQuestionImport('merge')}>Mesclar ao caderno</button><button type="button" className="header-button header-button-secondary" onClick={() => commitNotebookQuestionImport('replace')}>Substituir tudo</button></div></div> : null}</div>}
         <input ref={importInputRef} type="file" accept="application/json" className="settings-hidden-input" onChange={settingsContext === 'library' ? handleImportNotebooks : handleImportNotebookQuestions} />
         {settingsStatus ? <p className="settings-status">{settingsStatus}</p> : null}
       </div></div> : null}
