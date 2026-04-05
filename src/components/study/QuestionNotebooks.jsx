@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import SummaryCard from '../ui/SummaryCard'
 import Card from '../ui/Card'
 
@@ -137,7 +137,102 @@ function TrashIcon() {
   )
 }
 
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 8.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-1.5 1.5a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.2 1.2 0 0 1-1.2 1.2h-2.2A1.2 1.2 0 0 1 10 20v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0L5 17.7a1.2 1.2 0 0 1 0-1.7l.1-.1A1 1 0 0 0 5.3 15a1 1 0 0 0-.9-.6H4.2A1.2 1.2 0 0 1 3 13.2v-2.1A1.2 1.2 0 0 1 4.2 10h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1L5 8.2a1.2 1.2 0 0 1 0-1.7L6.5 5a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4.2A1.2 1.2 0 0 1 11.2 3h2.1a1.2 1.2 0 0 1 1.2 1.2v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0L19 6.5a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 21 11.2v2.1a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ExportIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 4.5v10m0-10 4 4m-4-4-4 4M5 15.5v2.25A1.75 1.75 0 0 0 6.75 19.5h10.5A1.75 1.75 0 0 0 19 17.75V15.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ImportIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 19.5v-10m0 10 4-4m-4 4-4-4M5 8.5V6.25A1.75 1.75 0 0 1 6.75 4.5h10.5A1.75 1.75 0 0 1 19 6.25V8.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CheckBadgeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m6.5 12.2 3.4 3.4 7.6-7.6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function normalizeImportedNotebooks(importedNotebooks) {
+  const baseTime = Date.now()
+
+  return importedNotebooks.map((notebook, notebookIndex) => {
+    const notebookId = baseTime + notebookIndex * 1000
+    const idMap = new Map()
+    const questions = Array.isArray(notebook.questions) ? notebook.questions : []
+
+    const normalizedQuestions = questions.map((question, questionIndex) => {
+      const nextQuestionId = notebookId + questionIndex + 1
+      idMap.set(question.id, nextQuestionId)
+
+      return {
+        ...question,
+        id: nextQuestionId,
+        correctCount: question.correctCount ?? 0,
+        wrongCount: question.wrongCount ?? 0,
+        alternatives: Array.isArray(question.alternatives) ? question.alternatives : []
+      }
+    })
+
+    const attempts = (Array.isArray(notebook.attempts) ? notebook.attempts : []).map((attempt, attemptIndex) => ({
+      ...attempt,
+      id: notebookId + 500 + attemptIndex,
+      number: attemptIndex + 1,
+      questions: Array.isArray(attempt.questions)
+        ? attempt.questions.map((question) => ({
+            ...question,
+            questionId: idMap.get(question.questionId) ?? question.questionId
+          }))
+        : []
+    }))
+
+    return {
+      id: notebookId,
+      name: notebook.name ?? `Caderno importado ${notebookIndex + 1}`,
+      description: notebook.description ?? '',
+      tag: notebook.tag ?? '',
+      color: notebook.color ?? COLORS[notebookIndex % COLORS.length],
+      createdAt: notebook.createdAt ?? notebook.updatedAt ?? baseTime,
+      updatedAt: Date.now(),
+      attempts,
+      questions: normalizedQuestions
+    }
+  })
+}
+
 function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
+  const importInputRef = useRef(null)
   const [notebooks, setNotebooks] = useState(() => readStore())
   const [view, setView] = useState(() => (initialSelectedId ? 'detail' : 'library'))
   const [selectedId, setSelectedId] = useState(() => initialSelectedId ?? null)
@@ -150,6 +245,11 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const [editingQuestionId, setEditingQuestionId] = useState(null)
   const [editingQuestionForm, setEditingQuestionForm] = useState(emptyQuestion)
   const [reportOpen, setReportOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsMode, setSettingsMode] = useState('export')
+  const [exportSelection, setExportSelection] = useState([])
+  const [includeReportsOnExport, setIncludeReportsOnExport] = useState(true)
+  const [settingsStatus, setSettingsStatus] = useState('')
   const [draggedNotebookId, setDraggedNotebookId] = useState(null)
   const [dragOverNotebookId, setDragOverNotebookId] = useState(null)
   const [draggedQuestionId, setDraggedQuestionId] = useState(null)
@@ -190,7 +290,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   }, [selected, selectedAttempts])
 
   useEffect(() => {
-    const shouldLockScroll = Boolean(editing || editingQuestion || reportOpen)
+    const shouldLockScroll = Boolean(editing || editingQuestion || reportOpen || settingsOpen)
     const previousBodyOverflow = document.body.style.overflow
     const previousHtmlOverflow = document.documentElement.style.overflow
 
@@ -203,7 +303,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       document.body.style.overflow = previousBodyOverflow
       document.documentElement.style.overflow = previousHtmlOverflow
     }
-  }, [editing, editingQuestion, reportOpen])
+  }, [editing, editingQuestion, reportOpen, settingsOpen])
 
   useLayoutEffect(() => {
     if (!initialSelectedId) return
@@ -448,6 +548,91 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     handleNotebookDragEnd()
   }
 
+  function openNotebookSettings() {
+    setSettingsMode('export')
+    setExportSelection([])
+    setIncludeReportsOnExport(true)
+    setSettingsStatus('')
+    setSettingsOpen(true)
+  }
+
+  function closeNotebookSettings() {
+    setSettingsOpen(false)
+    setSettingsStatus('')
+  }
+
+  function toggleExportSelection(notebookId) {
+    setExportSelection((previous) =>
+      previous.includes(notebookId)
+        ? previous.filter((id) => id !== notebookId)
+        : [...previous, notebookId]
+    )
+  }
+
+  function handleExportNotebooks() {
+    const selectedBooks = notebooks.filter((notebook) => exportSelection.includes(notebook.id))
+    if (selectedBooks.length === 0) {
+      setSettingsStatus('Selecione pelo menos um caderno para exportar.')
+      return
+    }
+
+    const payload = {
+      app: 'study-dashboard',
+      type: 'question-notebooks-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      includeReports: includeReportsOnExport,
+      notebooks: selectedBooks.map((notebook) => ({
+        ...notebook,
+        attempts: includeReportsOnExport ? notebook.attempts ?? [] : []
+      }))
+    }
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `studydash-cadernos-${new Date().toISOString().slice(0, 10)}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    setSettingsStatus('Caderno(s) exportado(s) com sucesso.')
+  }
+
+  function handleOpenNotebookImport() {
+    importInputRef.current?.click()
+  }
+
+  function handleImportNotebooks(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || '{}'))
+        const importedNotebooks = Array.isArray(parsed?.notebooks)
+          ? parsed.notebooks
+          : Array.isArray(parsed)
+            ? parsed
+            : null
+
+        if (!importedNotebooks || importedNotebooks.length === 0) {
+          throw new Error('Formato inválido')
+        }
+
+        const normalized = normalizeImportedNotebooks(importedNotebooks)
+        setNotebooks((previous) => [...normalized, ...previous])
+        setSettingsStatus(`${normalized.length} caderno(s) importado(s) com sucesso.`)
+      } catch {
+        setSettingsStatus('Não consegui importar este arquivo de cadernos.')
+      } finally {
+        event.target.value = ''
+      }
+    }
+
+    reader.readAsText(file)
+  }
+
   function deleteAttempt(attemptId) {
     if (!selected) return
     if (!window.confirm('Excluir esta tentativa do relatório? Isso também removerá os dados estatísticos dela.')) return
@@ -515,7 +700,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       {view === 'library' ? <section className="notebooks-library-layout"><Card><section className="panel-section">
         <div className="notebooks-library-header">
           <div><h2 className="section-title">Estante de cadernos</h2><p className="flashcards-helper">Abra um caderno para estudar ou ative a edição da estante para alterar os volumes existentes.</p></div>
-          <div className="notebooks-library-actions"><button type="button" className={`plan-action-btn${shelfEdit ? ' is-active' : ''}`} onClick={() => setShelfEdit((p) => !p)}>{shelfEdit ? 'Concluir edição' : 'Editar estante'}</button></div>
+          <div className="notebooks-library-actions"><button type="button" className={`plan-action-btn${shelfEdit ? ' is-active' : ''}`} onClick={() => setShelfEdit((p) => !p)}>{shelfEdit ? 'Concluir edição' : 'Editar estante'}</button><button type="button" className="header-button header-button-secondary notebook-shelf-settings-button" onClick={openNotebookSettings}><span className="notebook-inline-icon"><SettingsIcon /></span><span>Configurações</span></button></div>
         </div>
         <div className="notebooks-shelf">
           {notebooks.map((n) => <button key={n.id} type="button" className={`notebook-book notebook-book--${n.color} notebook-book-draggable ${draggedNotebookId === n.id ? 'is-dragging' : ''} ${dragOverNotebookId === n.id && draggedNotebookId !== n.id ? 'is-drop-target' : ''}`} draggable onDragStart={() => handleNotebookDragStart(n.id)} onDragOver={(event) => handleNotebookDragOver(event, n.id)} onDrop={(event) => handleNotebookDrop(event, n.id)} onDragEnd={handleNotebookDragEnd} onClick={() => shelfEdit ? openEditor(n) : openDetail(n.id)}>
@@ -593,6 +778,13 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
         <div className="important-date-modal-header"><div><h2 id="notebook-report-title" className="plan-modal-title">Relatório de tentativas</h2><p className="flashcards-helper">Histórico completo das suas resoluções no caderno {selected.name}.</p></div><button type="button" className="modal-close-button" onClick={() => setReportOpen(false)} aria-label="Fechar relatório de tentativas">×</button></div>
         {reportStats ? <div className="notebook-report-stats"><article className="notebook-report-stat-card"><span>Total de tentativas</span><strong>{reportStats.totalAttempts}</strong></article><article className="notebook-report-stat-card"><span>Média de acertos</span><strong>{reportStats.averageCorrect}/{reportStats.totalQuestionsPerAttempt}</strong></article><article className="notebook-report-stat-card"><span>Melhor tentativa</span><strong>{reportStats.bestAttempt}/{reportStats.totalQuestionsPerAttempt}</strong></article><article className="notebook-report-stat-card"><span>Última tentativa</span><strong>{reportStats.lastAttemptAt ? fmt(reportStats.lastAttemptAt) : 'Sem registro'}</strong></article></div> : null}
         <div className="notebook-report-list">{selectedAttempts.slice().reverse().map((attempt) => { const activeQuestionIds = new Set(selected.questions.map((question) => question.id)); const correctLabels = (attempt.questions ?? []).filter((question) => question.answered && question.isCorrect).map((question) => activeQuestionIds.has(question.questionId) ? question.number : 'N/A'); const wrongLabels = (attempt.questions ?? []).filter((question) => question.answered && !question.isCorrect).map((question) => activeQuestionIds.has(question.questionId) ? question.number : 'N/A'); return <article key={attempt.id} className="notebook-report-item"><div className="notebook-report-item-header"><div><h3>Tentativa {attempt.number}</h3><p>{fmt(attempt.completedAt)}</p></div><div className="notebook-report-item-actions"><span className="notebook-report-score">{attempt.correctQuestions.length}/{attempt.totalQuestions} acertos</span><button type="button" className="plan-action-btn notebook-report-delete-button" onClick={() => deleteAttempt(attempt.id)}><span className="notebook-inline-icon"><TrashIcon /></span><span>Apagar</span></button></div></div><div className="notebook-report-columns"><div><h4>Questões corretas</h4><p>{correctLabels.length > 0 ? correctLabels.join(', ') : 'Nenhuma questão correta nesta tentativa.'}</p></div><div><h4>Questões erradas</h4><p>{wrongLabels.length > 0 ? wrongLabels.join(', ') : 'Nenhuma questão errada nesta tentativa.'}</p></div></div></article>})}</div>
+      </div></div> : null}
+      {settingsOpen ? <div className="plan-modal-overlay" onClick={closeNotebookSettings}><div className="plan-modal notebook-settings-modal" role="dialog" aria-modal="true" aria-labelledby="notebook-settings-title" onClick={(e) => e.stopPropagation()}>
+        <div className="important-date-modal-header"><div><h2 id="notebook-settings-title" className="plan-modal-title">Configurações da estante</h2><p className="flashcards-helper">Exporte ou importe um ou vários cadernos com questões e relatórios.</p></div><button type="button" className="modal-close-button" onClick={closeNotebookSettings} aria-label="Fechar configurações da estante">×</button></div>
+        <div className="notebook-settings-mode-switch"><button type="button" className={`notebook-settings-mode-button${settingsMode === 'export' ? ' is-active' : ''}`} onClick={() => { setSettingsMode('export'); setSettingsStatus('') }}><span className="notebook-inline-icon"><ExportIcon /></span><span>Exportar</span></button><button type="button" className={`notebook-settings-mode-button${settingsMode === 'import' ? ' is-active' : ''}`} onClick={() => { setSettingsMode('import'); setSettingsStatus('') }}><span className="notebook-inline-icon"><ImportIcon /></span><span>Importar</span></button></div>
+        {settingsMode === 'export' ? <div className="notebook-settings-body"><div className="notebook-settings-hero"><div><h3 className="section-title">Exportar cadernos</h3><p className="flashcards-helper">Monte um arquivo com um ou vários cadernos e leve também os relatórios, se quiser.</p></div><label className="notebook-settings-switch-card"><span><strong>Incluir relatórios</strong><small>Leva tentativas e estatísticas do relatório junto com os cadernos.</small></span><button type="button" role="switch" aria-checked={includeReportsOnExport} className={`notebook-settings-switch${includeReportsOnExport ? ' is-active' : ''}`} onClick={() => setIncludeReportsOnExport((previous) => !previous)}><span /></button></label></div><div><h3 className="section-title">Selecione os cadernos</h3><p className="flashcards-helper">Nenhum caderno começa marcado. Escolha manualmente o que deseja exportar.</p></div><div className="notebook-settings-selection-list">{notebooks.map((notebook) => <label key={notebook.id} className={`notebook-settings-selection-item${exportSelection.includes(notebook.id) ? ' is-selected' : ''}`}><input type="checkbox" checked={exportSelection.includes(notebook.id)} onChange={() => toggleExportSelection(notebook.id)} /><span className="notebook-settings-selection-app">{exportSelection.includes(notebook.id) ? <span className="notebook-settings-selection-badge"><CheckBadgeIcon /></span> : null}<span className={`notebook-settings-selection-app-icon notebook-settings-selection-app-icon--${notebook.color}`} aria-hidden="true">{notebook.name.slice(0, 1).toUpperCase()}</span><span className="notebook-settings-selection-copy"><strong>{notebook.name}</strong><small>{notebook.questions.length} questão(ões){(notebook.attempts?.length ?? 0) > 0 ? ` • ${notebook.attempts.length} relatório(s)` : ''}</small></span></span></label>)}</div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportNotebooks}>Exportar caderno(s)</button></div></div> : <div className="notebook-settings-body notebook-settings-body-import"><div className="notebook-settings-import-card"><div><h3 className="section-title">Importar arquivo de caderno</h3><p className="flashcards-helper">Escolha um arquivo exportado da estante. Os cadernos serão adicionados automaticamente com questões e relatórios, se existirem.</p></div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleOpenNotebookImport}>Selecionar arquivo</button></div></div></div>}
+        <input ref={importInputRef} type="file" accept="application/json" className="settings-hidden-input" onChange={handleImportNotebooks} />
+        {settingsStatus ? <p className="settings-status">{settingsStatus}</p> : null}
       </div></div> : null}
     </>
   )
