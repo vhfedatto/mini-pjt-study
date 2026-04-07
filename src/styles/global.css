@@ -753,7 +753,7 @@ body {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  overflow: hidden;
+  overflow: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -777,12 +777,17 @@ body.modal-scroll-locked .dashboard-content {
 
 .plan-modal {
   width: min(560px, 100%);
+  max-height: min(calc(100vh - 40px), 920px);
   border-radius: var(--radius-lg);
   background: var(--panel);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   padding: 24px;
   text-align: left;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .plan-modal-title {
@@ -1935,6 +1940,7 @@ body.modal-scroll-locked .dashboard-content {
 
 .notes-config-modal {
   width: min(920px, 100%);
+  max-height: min(calc(100vh - 96px), 820px);
 }
 
 .notes-config-modal-header {

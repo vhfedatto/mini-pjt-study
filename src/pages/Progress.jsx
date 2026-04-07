@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import Header from '../components/layout/Header'
 import SummaryCard from '../components/ui/SummaryCard'
 import Footer from '../components/layout/Footer'
 import Card from '../components/ui/Card'
@@ -11,6 +10,16 @@ const DEFAULT_EVALUATIONS = [
   { id: 'av1', label: 'AV1' },
   { id: 'av2', label: 'AV2' }
 ]
+const DEFAULT_GRADING_STYLE = 'numeric'
+const LETTER_GRADE_VALUES = {
+  A: 10,
+  B: 8,
+  C: 7,
+  D: 6,
+  E: 4,
+  F: 2
+}
+const LETTER_GRADE_ORDER = ['A', 'B', 'C', 'D', 'E', 'F']
 
 function GearIcon() {
   return (
@@ -83,10 +92,52 @@ function parseNumber(value) {
 }
 
 function formatScoreInput(value) {
-  const digits = String(value || '').replace(/\D/g, '')
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 4)
   if (!digits) return ''
   if (digits.length === 1) return digits
-  return `${digits.slice(0, -1)},${digits.slice(-1)}`
+  if (digits.length === 2) return `${digits[0]},${digits[1]}`
+  if (digits.length === 3) return `${digits.slice(0, 2)},${digits[2]}`
+  return `${digits.slice(0, 2)},${digits.slice(2)}`
+}
+
+function formatLetterInput(value) {
+  const letter = String(value || '')
+    .toUpperCase()
+    .replace(/[^A-F]/g, '')
+  return letter.slice(0, 1)
+}
+
+function parseGradeValue(value, gradingStyle) {
+  if (gradingStyle === 'letter') {
+    const letter = formatLetterInput(value)
+    return letter ? LETTER_GRADE_VALUES[letter] ?? null : null
+  }
+
+  return parseNumber(value)
+}
+
+function formatAverageDisplay(value, gradingStyle) {
+  if (!Number.isFinite(value)) return '-'
+  if (gradingStyle === 'letter') return toLetterGrade(value)
+  return formatScore(value)
+}
+
+function toLetterGrade(value) {
+  if (!Number.isFinite(value)) return '-'
+  if (value >= 9) return 'A'
+  if (value >= 8) return 'B'
+  if (value >= 7) return 'C'
+  if (value >= 6) return 'D'
+  if (value >= 4) return 'E'
+  return 'F'
+}
+
+function formatMissingDisplay(missingToPass, passingScoreValue, gradingStyle) {
+  if (gradingStyle === 'letter') {
+    return missingToPass > 0 ? `Meta ${formatLetterInput(passingScoreValue) || 'D'}` : 'Aprovado'
+  }
+
+  return formatScore(missingToPass)
 }
 
 function createPlanGradeConfig(subjectIds = []) {
@@ -97,8 +148,15 @@ function createPlanGradeConfig(subjectIds = []) {
   }
 }
 
+function isLockedEvaluation(evaluationId) {
+  return evaluationId === 'av1' || evaluationId === 'av2'
+}
+
 function ensureGradebookShape(gradebook, subjects) {
   const safeGradebook = gradebook && typeof gradebook === 'object' ? gradebook : {}
+  const settings = safeGradebook.settings && typeof safeGradebook.settings === 'object'
+    ? safeGradebook.settings
+    : {}
   const plans = safeGradebook.plans && typeof safeGradebook.plans === 'object' ? safeGradebook.plans : {}
   const entries = safeGradebook.entries && typeof safeGradebook.entries === 'object' ? safeGradebook.entries : {}
   let changed = false
@@ -148,6 +206,9 @@ function ensureGradebookShape(gradebook, subjects) {
   return {
     changed,
     value: {
+      settings: {
+        gradingStyle: settings.gradingStyle || DEFAULT_GRADING_STYLE
+      },
       plans: nextPlans,
       entries: nextEntries
     }
@@ -210,6 +271,7 @@ function Progress() {
     }
   }, [plans, selectedPlanId])
 
+  const gradingStyle = gradebook.settings?.gradingStyle || DEFAULT_GRADING_STYLE
   const selectedPlan = useMemo(
     () => plans.find((plan) => String(plan.id) === selectedPlanId) ?? null,
     [plans, selectedPlanId]
@@ -322,11 +384,13 @@ function Progress() {
       const linkedPlan = plans.find((plan) => String(plan.id) === planKey)
       const planConfig = allPlanConfigs[planKey] || createPlanGradeConfig([String(subject.id)])
       const subjectEntry = gradebook.entries[String(subject.id)] || { scores: {} }
-      const passingScore = parseNumber(planConfig.passingScore) ?? parseNumber(DEFAULT_PASSING_SCORE) ?? 0
+      const passingScore = parseGradeValue(planConfig.passingScore, gradingStyle)
+        ?? parseGradeValue(DEFAULT_PASSING_SCORE, gradingStyle)
+        ?? 0
 
       const subjectEvaluations = planConfig.evaluations
       const scoresForAverage = subjectEvaluations
-        .map((evaluation) => parseNumber(subjectEntry.scores?.[evaluation.id]))
+        .map((evaluation) => parseGradeValue(subjectEntry.scores?.[evaluation.id], gradingStyle))
         .filter((value) => value !== null)
 
       const average = scoresForAverage.length > 0
@@ -347,7 +411,11 @@ function Progress() {
   }, [allPlanConfigs, gradebook.entries, plans, visibleSubjects])
 
   const subjectsWithAverage = gradeRows.filter((row) => row.average !== null).length
-  const passingRows = gradeRows.filter((row) => row.average !== null && row.average >= (parseNumber(row.planConfig.passingScore) ?? 0)).length
+  const passingRows = gradeRows.filter(
+    (row) =>
+      row.average !== null &&
+      row.average >= (parseGradeValue(row.planConfig.passingScore, gradingStyle) ?? 0)
+  ).length
   const pendingProofCards = useMemo(() => {
     const today = new Date().toISOString().split('T')[0]
     return importantDates.filter((item) => item.dueDate && item.dueDate >= today && !item.completed).length
@@ -395,7 +463,10 @@ function Progress() {
 
   const handlePassingScoreChange = (value) => {
     if (!selectedPlanId) return
-    updatePlanConfig(selectedPlanId, (config) => ({ ...config, passingScore: value }))
+    updatePlanConfig(selectedPlanId, (config) => ({
+      ...config,
+      passingScore: gradingStyle === 'letter' ? formatLetterInput(value) : formatScoreInput(value)
+    }))
   }
 
   const handleEvaluationLabelChange = (evaluationId, value) => {
@@ -442,6 +513,10 @@ function Progress() {
 
   const handleRemoveEvaluation = (evaluationId) => {
     if (!selectedPlanId || !activePlanConfig) return
+    if (isLockedEvaluation(evaluationId)) {
+      alert('AV1 e AV2 são colunas obrigatórias e não podem ser removidas.')
+      return
+    }
     if (activePlanConfig.evaluations.length <= 1) {
       alert('Mantenha pelo menos uma avaliação cadastrada.')
       return
@@ -491,15 +566,23 @@ function Progress() {
       ...entry,
       scores: {
         ...(entry.scores || {}),
-        [evaluationId]: formatScoreInput(value)
+        [evaluationId]: gradingStyle === 'letter' ? formatLetterInput(value) : formatScoreInput(value)
+      }
+    }))
+  }
+
+  const handleGradingStyleChange = (value) => {
+    setGradebook((prev) => ({
+      ...prev,
+      settings: {
+        ...(prev.settings || {}),
+        gradingStyle: value
       }
     }))
   }
 
   return (
     <section className="dashboard-content">
-      <Header />
-
       <section className="summary-grid">
         <SummaryCard
           title="Matérias na tabela"
@@ -539,9 +622,8 @@ function Progress() {
                 type="button"
                 className="notes-settings-trigger"
                 onClick={() => setIsConfigOpen(true)}
-                aria-label={selectedPlan ? `Abrir configurações de ${selectedPlan.name}` : 'Selecione um plano para configurar'}
-                title={selectedPlan ? 'Configurações da tabela' : 'Selecione um plano para configurar'}
-                disabled={!selectedPlan}
+                aria-label={selectedPlan ? `Abrir configurações de ${selectedPlan.name}` : 'Abrir configurações da tabela'}
+                title="Configurações da tabela"
               >
                 <GearIcon />
               </button>
@@ -577,18 +659,10 @@ function Progress() {
               )
             })}
           </div>
-
-          {!selectedPlan ? (
-            <div className="notes-all-plans-tip">
-              <p>
-                Nenhum plano está selecionado. A tabela mostra todas as matérias e notas ao mesmo tempo.
-              </p>
-            </div>
-          ) : null}
         </section>
       </Card>
 
-      {selectedPlan && isConfigOpen ? (
+      {isConfigOpen ? (
         <div
           className="plan-modal-overlay"
           role="presentation"
@@ -604,7 +678,9 @@ function Progress() {
             <div className="notes-config-modal-header">
               <div>
                 <h2 id="notes-config-title" className="plan-modal-title">Configurações da tabela</h2>
-                <p className="settings-helper">{selectedPlan.name}</p>
+                <p className="settings-helper">
+                  Ajuste configurações gerais e, quando houver um plano selecionado, as configurações específicas dele.
+                </p>
               </div>
               <button
                 type="button"
@@ -617,6 +693,30 @@ function Progress() {
             </div>
 
             <div className="notes-config-grid">
+              <div className="notes-config-card">
+                <div className="notes-config-header">
+                  <div>
+                    <h3>Configurações gerais</h3>
+                    <p>Definem o estilo de avaliação usado em toda a tabela.</p>
+                  </div>
+                </div>
+
+                <div className="plan-field-group">
+                  <label className="plan-field-label" htmlFor="notes-grading-style">Estilo de avaliação</label>
+                  <select
+                    id="notes-grading-style"
+                    className="subject-input"
+                    value={gradingStyle}
+                    onChange={(event) => handleGradingStyleChange(event.target.value)}
+                  >
+                    <option value="numeric">Numeric Grading Scale (0-10)</option>
+                    <option value="letter">Letter Grading System (A-F)</option>
+                  </select>
+                </div>
+              </div>
+
+              {selectedPlan ? (
+                <>
               <div className="notes-config-card">
                 <div className="notes-config-header">
                   <div>
@@ -634,8 +734,8 @@ function Progress() {
                     id="notes-passing-score"
                     className="subject-input"
                     type="text"
-                    inputMode="decimal"
-                    placeholder="Ex: 6"
+                    inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                    placeholder={gradingStyle === 'letter' ? 'Ex: D' : 'Ex: 6'}
                     value={activePlanConfig?.passingScore || ''}
                     onChange={(event) => handlePassingScoreChange(event.target.value)}
                   />
@@ -659,14 +759,6 @@ function Progress() {
                           onChange={(event) => handleEvaluationLabelChange(evaluation.id, event.target.value)}
                           placeholder="Nome da avaliação"
                         />
-                        <button
-                          type="button"
-                          className="subject-remove-button"
-                          onClick={() => handleRemoveEvaluation(evaluation.id)}
-                          aria-label={`Remover ${evaluation.label}`}
-                        >
-                          ✕
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -714,6 +806,17 @@ function Progress() {
                   <p className="empty-message">Nenhuma matéria vinculada a este plano ainda.</p>
                 )}
               </div>
+                </>
+              ) : (
+                <div className="notes-config-card">
+                  <div className="notes-config-header">
+                    <div>
+                      <h3>Configurações por plano</h3>
+                      <p>Selecione um card de plano para editar nota de corte, avaliações e matérias visíveis.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -784,8 +887,8 @@ function Progress() {
                               <input
                                 className="subject-input notes-score-input"
                                 type="text"
-                                inputMode="decimal"
-                                placeholder="0,0"
+                                inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                                placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
                                 value={scoreValue}
                                 onChange={(event) =>
                                   handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
@@ -810,12 +913,12 @@ function Progress() {
                       })}
 
                       <div className="notes-metric-cell">
-                        <strong>{formatScore(row.average)}</strong>
+                        <strong>{formatAverageDisplay(row.average, gradingStyle)}</strong>
                       </div>
 
                       <div className="notes-metric-cell">
                         <strong className={row.missingToPass > 0 ? 'notes-missing-score' : 'notes-passing-score'}>
-                          {formatScore(row.missingToPass)}
+                          {formatMissingDisplay(row.missingToPass, row.planConfig.passingScore, gradingStyle)}
                         </strong>
                       </div>
                     </div>
