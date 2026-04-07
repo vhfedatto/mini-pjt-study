@@ -1,3 +1,6 @@
+import { useContext } from 'react'
+import { ThemeContext } from '../../context/ThemeContext'
+
 function GearIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -21,8 +24,50 @@ function GearIcon() {
   )
 }
 
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle
+        cx="12"
+        cy="12"
+        r="4.2"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M18.6 14.9A7.8 7.8 0 0 1 9.1 5.4a8.8 8.8 0 1 0 9.5 9.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+        transform="translate(2 -2)"
+      />
+    </svg>
+  )
+}
+
 // Componente funcional
 function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onToggleSidebar }) {
+  const { theme, toggleTheme } = useContext(ThemeContext)
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard' },
@@ -70,13 +115,25 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
       </nav>
 
       <div className="sidebar-bottom-actions">
-        <button
-          type="button"
-          className={`sidebar-settings-button${activePage === 'profile' ? ' sidebar-link-active' : ''}`}
-          onClick={() => setActivePage?.('profile')}
-        >
-          <span>Perfil</span>
-        </button>
+        <div className="sidebar-bottom-row">
+          <button
+            type="button"
+            className={`sidebar-settings-button sidebar-profile-button${activePage === 'profile' ? ' sidebar-link-active' : ''}`}
+            onClick={() => setActivePage?.('profile')}
+          >
+            <span>Perfil</span>
+          </button>
+
+          <button
+            type="button"
+            className="sidebar-theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+            title={theme === 'light' ? 'Modo claro ativo' : 'Modo escuro ativo'}
+          >
+            {theme === 'light' ? <SunIcon /> : <MoonIcon />}
+          </button>
+        </div>
 
         <button
           type="button"

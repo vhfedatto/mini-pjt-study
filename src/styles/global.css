@@ -284,6 +284,13 @@ body {
   gap: 10px;
 }
 
+.sidebar-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .sidebar-settings-button {
   padding: 12px 14px;
   border-radius: var(--radius-md);
@@ -297,6 +304,12 @@ body {
   cursor: pointer;
   font: inherit;
   transition: transform 0.18s ease, border-color 0.2s, background-color 0.2s;
+}
+
+.sidebar-profile-button {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 10px 12px;
 }
 
 .sidebar-settings-button:hover {
@@ -316,6 +329,38 @@ body {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+}
+
+.sidebar-theme-toggle {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fceaea;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.sidebar-theme-toggle:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.sidebar-theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar-theme-toggle:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.42);
+  outline-offset: 2px;
 }
 
 .dashboard-content {
