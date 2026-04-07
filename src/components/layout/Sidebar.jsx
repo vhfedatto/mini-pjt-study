@@ -65,17 +65,69 @@ function MoonIcon() {
   )
 }
 
+function DashboardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4.75 12.25h6.5v7h-6.5Zm8 0h6.5v7h-6.5Zm-8-7h14.5v5.5H4.75Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 3.75v2.5M17 3.75v2.5M4.75 8.25h14.5M6.75 5.75h10.5A1.75 1.75 0 0 1 19 7.5v10.75A1.75 1.75 0 0 1 17.25 20H6.75A1.75 1.75 0 0 1 5 18.25V7.5A1.75 1.75 0 0 1 6.75 5.75Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function NotebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 4.75h9.5A2.75 2.75 0 0 1 19.25 7.5v9A2.75 2.75 0 0 1 16.5 19.25H7.75A2.75 2.75 0 0 1 5 16.5V6.75A2 2 0 0 1 7 4.75Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.75 8.25h7M8.75 11.75h7M8.75 15.25h4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ExamIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 4.75h7.75L19.25 9v10.25A2.75 2.75 0 0 1 16.5 22H7.5A2.75 2.75 0 0 1 4.75 19.25v-11.75A2.75 2.75 0 0 1 7.5 4.75Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14.25 5.25v4.5h4.5M8.75 13l1.8 1.8 4.7-4.7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function NotesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.75 4.75h10.5A1.75 1.75 0 0 1 19 6.5v11A1.75 1.75 0 0 1 17.25 19.25H6.75A1.75 1.75 0 0 1 5 17.5v-11A1.75 1.75 0 0 1 6.75 4.75Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 15.5 11 13l1.8 1.8 2.7-3.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function RankingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 19.25h10M8.75 19.25v-5.5M12 19.25v-9M15.25 19.25v-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.75 7.75 12 4.75l3.25 3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 // Componente funcional
 function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onToggleSidebar }) {
   const { theme, toggleTheme } = useContext(ThemeContext)
 
   const navItems = [
-    { key: 'dashboard', label: 'Dashboard' },
-    { key: 'agenda', label: 'Agenda' },
-    { key: 'flashcards', label: 'Cadernos' },
-    { key: 'important-dates', label: 'Provas' },
-    { key: 'progress', label: 'Notas' },
-    { key: 'ranking', label: 'Ranking' },
+    { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
+    { key: 'agenda', label: 'Agenda', icon: <CalendarIcon /> },
+    { key: 'flashcards', label: 'Cadernos', icon: <NotebookIcon /> },
+    { key: 'important-dates', label: 'Provas', icon: <ExamIcon /> },
+    { key: 'progress', label: 'Notas', icon: <NotesIcon /> },
+    { key: 'ranking', label: 'Ranking', icon: <RankingIcon /> },
   ]
 
   return (
@@ -109,7 +161,8 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
             onClick={() => setActivePage?.(item.key)}
             className={activePage === item.key ? 'sidebar-link-active' : ''}
           >
-            {item.label}
+            <span className="sidebar-nav-icon" aria-hidden="true">{item.icon}</span>
+            <span>{item.label}</span>
           </button>
         ))}
       </nav>
