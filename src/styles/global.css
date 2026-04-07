@@ -1817,6 +1817,220 @@ body.modal-scroll-locked .dashboard-content {
   transition: width 0.35s ease;
 }
 
+.notes-panel,
+.notes-table-section {
+  gap: 18px;
+}
+
+.notes-toolbar,
+.notes-table-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.notes-toolbar-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.notes-plan-filter {
+  min-width: min(280px, 100%);
+}
+
+.notes-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.notes-config-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel-muted);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notes-config-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notes-config-header h3,
+.notes-evaluations-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.notes-config-header p,
+.notes-evaluations-header p,
+.notes-all-plans-tip p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+
+.notes-evaluations-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.notes-evaluation-list,
+.notes-subject-selector,
+.notes-proof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notes-evaluation-item,
+.notes-add-evaluation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.notes-subject-selector {
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.notes-subject-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.16s ease;
+}
+
+.notes-subject-option:hover {
+  transform: translateY(-1px);
+}
+
+.notes-subject-option.is-selected {
+  border-color: rgba(61, 9, 9, 0.24);
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--panel));
+}
+
+.notes-subject-option input {
+  accent-color: var(--accent);
+}
+
+.notes-all-plans-tip {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  background: color-mix(in srgb, var(--panel-muted) 72%, white);
+}
+
+.notes-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.notes-table {
+  display: grid;
+  gap: 12px;
+  min-width: 980px;
+}
+
+.notes-row {
+  display: contents;
+}
+
+.notes-row > div {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-muted);
+  padding: 12px;
+}
+
+.notes-row-header > div {
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.notes-subject-cell,
+.notes-score-cell,
+.notes-metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+.notes-score-cell {
+  align-items: stretch;
+}
+
+.notes-score-input {
+  min-width: 0;
+}
+
+.notes-empty-score {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+
+.notes-proof-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(61, 9, 9, 0.12);
+  background: linear-gradient(180deg, rgba(255, 249, 242, 0.96), rgba(255, 255, 255, 0.94));
+}
+
+.notes-proof-card strong {
+  color: var(--accent-strong);
+  font-size: 0.92rem;
+}
+
+.notes-proof-card span {
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.notes-metric-cell {
+  align-items: flex-start;
+}
+
+.notes-metric-cell strong {
+  font-size: 1.02rem;
+}
+
+.notes-missing-score {
+  color: #a93d2f;
+}
+
+.notes-passing-score {
+  color: #1e7a4d;
+}
+
 .ranking-board {
   display: grid;
   grid-template-columns: 1fr;
@@ -4709,6 +4923,9 @@ button {
   }
 
   .progress-card-header,
+  .notes-toolbar,
+  .notes-table-header,
+  .notes-config-header,
   .summary-card-header,
   .profile-friends-header,
   .important-date-modal-header,
@@ -4717,6 +4934,9 @@ button {
   }
 
   .progress-card-header > *,
+  .notes-toolbar > *,
+  .notes-table-header > *,
+  .notes-config-header > *,
   .important-date-modal-header > * {
     min-width: 0;
   }
@@ -4787,6 +5007,9 @@ button {
   .settings-actions,
   .top-nav,
   .progress-card-header,
+  .notes-toolbar,
+  .notes-table-header,
+  .notes-config-header,
   .summary-card-header,
   .profile-friends-header,
   .important-date-modal-header,
@@ -4799,12 +5022,25 @@ button {
   .settings-actions > *,
   .top-nav button,
   .progress-card-header .plan-action-btn,
+  .notes-toolbar-controls,
+  .notes-plan-filter,
+  .notes-add-evaluation,
   .ranking-select-actions > button,
   .ranking-select-actions > select,
   .important-date-modal-header .modal-close-button,
   .important-date-modal-header .subject-remove-button {
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .notes-toolbar-controls,
+  .notes-add-evaluation,
+  .notes-evaluation-item {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-config-card {
+    padding: 16px;
   }
 
   .summary-grid,

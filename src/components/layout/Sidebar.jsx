@@ -29,7 +29,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
     { key: 'agenda', label: 'Agenda' },
     { key: 'flashcards', label: 'Cadernos' },
     { key: 'important-dates', label: 'Provas' },
-    { key: 'progress', label: 'Progresso' },
+    { key: 'progress', label: 'Notas' },
     { key: 'ranking', label: 'Ranking' },
   ]
 
