@@ -5,6 +5,7 @@ import Card from '../components/ui/Card'
 
 const defaultPlanColor = '#c46b2d'
 const GRADES_STORAGE_KEY = 'studyGrades'
+const GRADES_BACKUP_STORAGE_KEY = 'studyGrades_backup'
 const DEFAULT_PASSING_SCORE = '6'
 const DEFAULT_EVALUATIONS = [
   { id: 'av1', label: 'AV1' },
@@ -39,6 +40,21 @@ function GearIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.8"
+      />
+    </svg>
+  )
+}
+
+function DragHandleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M9 6.5h.01M9 12h.01M9 17.5h.01M15 6.5h.01M15 12h.01M15 17.5h.01"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="3"
       />
     </svg>
   )
@@ -144,7 +160,8 @@ function createPlanGradeConfig(subjectIds = []) {
   return {
     passingScore: DEFAULT_PASSING_SCORE,
     evaluations: DEFAULT_EVALUATIONS.map((evaluation) => ({ ...evaluation })),
-    selectedSubjectIds: [...subjectIds]
+    selectedSubjectIds: [...subjectIds],
+    subjectOrder: [...subjectIds]
   }
 }
 
@@ -184,10 +201,20 @@ function ensureGradebookShape(gradebook, subjects) {
           .filter((subjectId) => planSubjects.includes(subjectId))
       : [...planSubjects]
 
+    const subjectOrder = Array.isArray(safeConfig.subjectOrder)
+      ? [
+          ...safeConfig.subjectOrder
+            .map((subjectId) => String(subjectId))
+            .filter((subjectId, index, array) => planSubjects.includes(subjectId) && array.indexOf(subjectId) === index),
+          ...planSubjects.filter((subjectId) => !safeConfig.subjectOrder.map((value) => String(value)).includes(subjectId))
+        ]
+      : [...planSubjects]
+
     const nextConfig = {
       passingScore: safeConfig.passingScore ?? DEFAULT_PASSING_SCORE,
       evaluations,
-      selectedSubjectIds
+      selectedSubjectIds,
+      subjectOrder
     }
 
     if (JSON.stringify(nextConfig) !== JSON.stringify(config)) {
@@ -215,25 +242,33 @@ function ensureGradebookShape(gradebook, subjects) {
   }
 }
 
+function readGradebook(subjects) {
+  const primary = ensureGradebookShape(readJSON(GRADES_STORAGE_KEY, {}), subjects)
+  if (primary.value && typeof primary.value === 'object') return primary.value
+
+  const backup = ensureGradebookShape(readJSON(GRADES_BACKUP_STORAGE_KEY, {}), subjects)
+  return backup.value
+}
+
 function Progress() {
   const [plans, setPlans] = useState(() =>
     readJSON('plans', readJSON('studyPlans', []))
   )
   const [subjects, setSubjects] = useState(() => readJSON('subjects', []))
   const [importantDates, setImportantDates] = useState(() => readJSON('importantDates', []))
-  const [gradebook, setGradebook] = useState(() =>
-    ensureGradebookShape(readJSON(GRADES_STORAGE_KEY, {}), readJSON('subjects', [])).value
-  )
+  const [gradebook, setGradebook] = useState(() => readGradebook(readJSON('subjects', [])))
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [newEvaluationName, setNewEvaluationName] = useState('')
   const [isConfigOpen, setIsConfigOpen] = useState(false)
+  const [draggedSubject, setDraggedSubject] = useState(null)
+  const [dragTargetSubjectId, setDragTargetSubjectId] = useState('')
 
   useEffect(() => {
     const syncData = () => {
       const nextPlans = readJSON('plans', readJSON('studyPlans', []))
       const nextSubjects = readJSON('subjects', [])
       const nextImportantDates = readJSON('importantDates', [])
-      const nextGradebook = ensureGradebookShape(readJSON(GRADES_STORAGE_KEY, {}), nextSubjects).value
+      const nextGradebook = readGradebook(nextSubjects)
 
       setPlans(nextPlans)
       setSubjects(nextSubjects)
@@ -259,8 +294,10 @@ function Progress() {
   }, [gradebook, subjects])
 
   useEffect(() => {
-    localStorage.setItem(GRADES_STORAGE_KEY, JSON.stringify(gradebook))
-  }, [gradebook])
+    const normalized = ensureGradebookShape(gradebook, subjects).value
+    localStorage.setItem(GRADES_STORAGE_KEY, JSON.stringify(normalized))
+    localStorage.setItem(GRADES_BACKUP_STORAGE_KEY, JSON.stringify(normalized))
+  }, [gradebook, subjects])
 
   useEffect(() => {
     if (!selectedPlanId) return
@@ -316,6 +353,19 @@ function Progress() {
     return configs
   }, [gradebook.plans, plans, subjects])
 
+  const getOrderedSubjectIds = (planKey) => {
+    const planSubjects = subjects
+      .filter((subject) => String(subject.planId) === String(planKey))
+      .map((subject) => String(subject.id))
+    const config = allPlanConfigs[String(planKey)] || createPlanGradeConfig(planSubjects)
+    const configuredOrder = Array.isArray(config.subjectOrder) ? config.subjectOrder.map((subjectId) => String(subjectId)) : []
+
+    return [
+      ...configuredOrder.filter((subjectId, index, array) => planSubjects.includes(subjectId) && array.indexOf(subjectId) === index),
+      ...planSubjects.filter((subjectId) => !configuredOrder.includes(subjectId))
+    ]
+  }
+
   const evaluationColumns = useMemo(() => {
     if (selectedPlanId) {
       return activePlanConfig?.evaluations || DEFAULT_EVALUATIONS
@@ -341,18 +391,30 @@ function Progress() {
   }, [activePlanConfig, allPlanConfigs, selectedPlanId])
 
   const visibleSubjects = useMemo(() => {
-    const subjectList = selectedPlanId
-      ? activePlanSubjects.filter((subject) =>
-          activePlanConfig?.selectedSubjectIds?.includes(String(subject.id))
-        )
-      : subjects
+    const getSubjectOrderIndex = (subject) => {
+      const orderedIds = getOrderedSubjectIds(subject.planId)
+      const index = orderedIds.indexOf(String(subject.id))
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index
+    }
 
-    return [...subjectList].sort((a, b) => {
-      const planA = plans.find((plan) => plan.id === a.planId)?.name || ''
-      const planB = plans.find((plan) => plan.id === b.planId)?.name || ''
-      return planA.localeCompare(planB) || a.name.localeCompare(b.name)
-    })
-  }, [activePlanConfig?.selectedSubjectIds, activePlanSubjects, plans, selectedPlanId, subjects])
+    if (selectedPlanId) {
+      return activePlanSubjects
+        .filter((subject) => activePlanConfig?.selectedSubjectIds?.includes(String(subject.id)))
+        .sort((a, b) => getSubjectOrderIndex(a) - getSubjectOrderIndex(b) || a.name.localeCompare(b.name))
+    }
+
+    return subjects
+      .filter((subject) => {
+        const planKey = String(subject.planId)
+        const planConfig = allPlanConfigs[planKey] || createPlanGradeConfig([String(subject.id)])
+        return planConfig.selectedSubjectIds.includes(String(subject.id))
+      })
+      .sort((a, b) => {
+        const planA = plans.find((plan) => String(plan.id) === String(a.planId))?.name || ''
+        const planB = plans.find((plan) => String(plan.id) === String(b.planId))?.name || ''
+        return planA.localeCompare(planB) || getSubjectOrderIndex(a) - getSubjectOrderIndex(b) || a.name.localeCompare(b.name)
+      })
+  }, [activePlanConfig?.selectedSubjectIds, activePlanSubjects, allPlanConfigs, plans, selectedPlanId, subjects])
 
   const proofCardsBySubject = useMemo(() => {
     const map = {}
@@ -409,6 +471,15 @@ function Progress() {
       }
     })
   }, [allPlanConfigs, gradebook.entries, plans, visibleSubjects])
+
+  const gradeRowsByPlan = useMemo(() => {
+    return gradeRows.reduce((accumulator, row) => {
+      const planKey = String(row.subject.planId)
+      if (!accumulator[planKey]) accumulator[planKey] = []
+      accumulator[planKey].push(row)
+      return accumulator
+    }, {})
+  }, [gradeRows])
 
   const subjectsWithAverage = gradeRows.filter((row) => row.average !== null).length
   const passingRows = gradeRows.filter(
@@ -556,9 +627,61 @@ function Progress() {
         ...config,
         selectedSubjectIds: isSelected
           ? config.selectedSubjectIds.filter((id) => id !== subjectKey)
-          : [...config.selectedSubjectIds, subjectKey]
+          : [...config.selectedSubjectIds, subjectKey],
+        subjectOrder: config.subjectOrder?.includes(subjectKey)
+          ? config.subjectOrder
+          : [...(config.subjectOrder || []), subjectKey]
       }
     })
+  }
+
+  const handleSubjectDragStart = (subjectId, planId) => {
+    setDraggedSubject({ subjectId: String(subjectId), planId: String(planId) })
+    setDragTargetSubjectId(String(subjectId))
+  }
+
+  const handleSubjectDragOver = (event, subjectId, planId) => {
+    event.preventDefault()
+    if (!draggedSubject || draggedSubject.planId !== String(planId)) return
+    if (dragTargetSubjectId !== String(subjectId)) {
+      setDragTargetSubjectId(String(subjectId))
+    }
+  }
+
+  const handleSubjectDragEnd = () => {
+    setDraggedSubject(null)
+    setDragTargetSubjectId('')
+  }
+
+  const handleSubjectDrop = (event, targetSubjectId, planId) => {
+    event.preventDefault()
+    const planKey = String(planId)
+    const targetKey = String(targetSubjectId)
+
+    if (!draggedSubject || draggedSubject.planId !== planKey || draggedSubject.subjectId === targetKey) {
+      handleSubjectDragEnd()
+      return
+    }
+
+    const currentOrder = getOrderedSubjectIds(planKey)
+    const draggedIndex = currentOrder.indexOf(draggedSubject.subjectId)
+    const targetIndex = currentOrder.indexOf(targetKey)
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      handleSubjectDragEnd()
+      return
+    }
+
+    const nextOrder = [...currentOrder]
+    const [movedSubjectId] = nextOrder.splice(draggedIndex, 1)
+    nextOrder.splice(targetIndex, 0, movedSubjectId)
+
+    updatePlanConfig(planKey, (config) => ({
+      ...config,
+      subjectOrder: nextOrder
+    }))
+
+    handleSubjectDragEnd()
   }
 
   const handleScoreChange = (subjectId, evaluationId, value) => {
@@ -834,98 +957,221 @@ function Progress() {
           </div>
 
           {gradeRows.length > 0 ? (
-            <div className="notes-table-shell">
-              <div
-                className="notes-table"
-                style={{
-                  gridTemplateColumns: `minmax(240px, 1.4fr) repeat(${evaluationColumns.length}, minmax(220px, 1fr)) minmax(140px, 0.7fr) minmax(170px, 0.8fr)`
-                }}
-              >
-                <div className="notes-row notes-row-header">
-                  <div>Matéria</div>
-                  {evaluationColumns.map((evaluation) => (
-                    <div key={evaluation.id}>{evaluation.label}</div>
-                  ))}
-                  <div>Média Final</div>
-                  <div>Falta para passar</div>
+            selectedPlanId ? (
+              <div className="notes-table-shell">
+                <div
+                  className="notes-table"
+                  style={{
+                    gridTemplateColumns: `minmax(240px, 1.4fr) repeat(${evaluationColumns.length}, minmax(220px, 1fr)) minmax(140px, 0.7fr) minmax(170px, 0.8fr)`
+                  }}
+                >
+                  <div className="notes-row notes-row-header">
+                    <div>Matéria</div>
+                    {evaluationColumns.map((evaluation) => (
+                      <div key={evaluation.id}>{evaluation.label}</div>
+                    ))}
+                    <div>Média Final</div>
+                    <div>Falta para passar</div>
+                  </div>
+
+                  {gradeRows.map((row) => {
+                    const planColor = row.linkedPlan?.color || defaultPlanColor
+
+                    return (
+                      <div className="notes-row" key={row.subject.id}>
+                        <div
+                          className={`notes-subject-cell notes-subject-cell-draggable${draggedSubject?.subjectId === String(row.subject.id) ? ' is-dragging' : ''}${dragTargetSubjectId === String(row.subject.id) && draggedSubject?.subjectId !== String(row.subject.id) && draggedSubject?.planId === String(row.subject.planId) ? ' is-drop-target' : ''}`}
+                          draggable
+                          onDragStart={() => handleSubjectDragStart(row.subject.id, row.subject.planId)}
+                          onDragOver={(event) => handleSubjectDragOver(event, row.subject.id, row.subject.planId)}
+                          onDrop={(event) => handleSubjectDrop(event, row.subject.id, row.subject.planId)}
+                          onDragEnd={handleSubjectDragEnd}
+                        >
+                          <span className="progress-subject-label">
+                            <span className="notes-drag-handle" aria-hidden="true">
+                              <DragHandleIcon />
+                            </span>
+                            <span
+                              className="plan-color-dot"
+                              style={{ '--plan-color': planColor }}
+                              aria-hidden="true"
+                            />
+                            <span className="progress-subject-name">{row.subject.name}</span>
+                            <span className="progress-plan-name">{row.linkedPlan?.name || 'Plano sem nome'}</span>
+                          </span>
+                        </div>
+
+                        {evaluationColumns.map((evaluation) => {
+                          const evaluationForSubject = row.planConfig.evaluations.find(
+                            (item) => normalizeLabel(item.label) === normalizeLabel(evaluation.label)
+                          )
+
+                          const scoreValue = evaluationForSubject
+                            ? row.subjectEntry.scores?.[evaluationForSubject.id] ?? ''
+                            : ''
+                          const proofCards = proofCardsBySubject[String(row.subject.id)]?.[
+                            normalizeLabel(evaluation.label)
+                          ] || []
+
+                          return (
+                            <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
+                              {evaluationForSubject ? (
+                                <input
+                                  className="subject-input notes-score-input"
+                                  type="text"
+                                  inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                                  placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
+                                  value={scoreValue}
+                                  onChange={(event) =>
+                                    handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
+                                  }
+                                />
+                              ) : (
+                                <div className="notes-empty-score">Não usada neste plano</div>
+                              )}
+
+                              {proofCards.length > 0 ? (
+                                <div className="notes-proof-list">
+                                  {proofCards.map((item) => (
+                                    <article className="notes-proof-card" key={item.id}>
+                                      <strong>{formatDate(item.dueDate)}</strong>
+                                      <span>{item.notes || 'Sem descrição cadastrada.'}</span>
+                                    </article>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+
+                        <div className="notes-metric-cell">
+                          <strong>{formatAverageDisplay(row.average, gradingStyle)}</strong>
+                        </div>
+
+                        <div className="notes-metric-cell">
+                          <strong className={row.missingToPass > 0 ? 'notes-missing-score' : 'notes-passing-score'}>
+                            {formatMissingDisplay(row.missingToPass, row.planConfig.passingScore, gradingStyle)}
+                          </strong>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-
-                {gradeRows.map((row) => {
-                  const planColor = row.linkedPlan?.color || defaultPlanColor
-
-                  return (
-                    <div className="notes-row" key={row.subject.id}>
-                      <div className="notes-subject-cell">
-                        <span className="progress-subject-label">
-                          <span
-                            className="plan-color-dot"
-                            style={{ '--plan-color': planColor }}
-                            aria-hidden="true"
-                          />
-                          <span className="progress-subject-name">{row.subject.name}</span>
-                          <span className="progress-plan-name">{row.linkedPlan?.name || 'Plano sem nome'}</span>
-                        </span>
-                      </div>
-
-                      {evaluationColumns.map((evaluation) => {
-                        const evaluationForSubject = row.planConfig.evaluations.find(
-                          (item) =>
-                            normalizeLabel(item.label) ===
-                            (selectedPlanId ? normalizeLabel(evaluation.label) : evaluation.id)
-                        )
-
-                        const scoreValue = evaluationForSubject
-                          ? row.subjectEntry.scores?.[evaluationForSubject.id] ?? ''
-                          : ''
-                        const proofCards = proofCardsBySubject[String(row.subject.id)]?.[
-                          selectedPlanId ? normalizeLabel(evaluation.label) : evaluation.id
-                        ] || []
-
-                        return (
-                          <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
-                            {evaluationForSubject ? (
-                              <input
-                                className="subject-input notes-score-input"
-                                type="text"
-                                inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
-                                placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
-                                value={scoreValue}
-                                onChange={(event) =>
-                                  handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
-                                }
-                              />
-                            ) : (
-                              <div className="notes-empty-score">Não usada neste plano</div>
-                            )}
-
-                            {proofCards.length > 0 ? (
-                              <div className="notes-proof-list">
-                                {proofCards.map((item) => (
-                                  <article className="notes-proof-card" key={item.id}>
-                                    <strong>{formatDate(item.dueDate)}</strong>
-                                    <span>{item.notes || 'Sem descrição cadastrada.'}</span>
-                                  </article>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                        )
-                      })}
-
-                      <div className="notes-metric-cell">
-                        <strong>{formatAverageDisplay(row.average, gradingStyle)}</strong>
-                      </div>
-
-                      <div className="notes-metric-cell">
-                        <strong className={row.missingToPass > 0 ? 'notes-missing-score' : 'notes-passing-score'}>
-                          {formatMissingDisplay(row.missingToPass, row.planConfig.passingScore, gradingStyle)}
-                        </strong>
-                      </div>
-                    </div>
-                  )
-                })}
               </div>
-            </div>
+            ) : (
+              <div className="notes-plan-table-list">
+                {plans
+                  .filter((plan) => (gradeRowsByPlan[String(plan.id)] || []).length > 0)
+                  .map((plan) => {
+                    const planKey = String(plan.id)
+                    const planRows = gradeRowsByPlan[planKey] || []
+                    const planConfig = allPlanConfigs[planKey] || createPlanGradeConfig([])
+                    const planEvaluations = planConfig.evaluations || DEFAULT_EVALUATIONS
+
+                    return (
+                      <section className="notes-plan-table-block" key={plan.id}>
+                        <div className="notes-plan-table-heading">
+                          <div className="notes-plan-card-title">
+                            <span
+                              className="plan-color-dot"
+                              style={{ '--plan-color': plan.color || defaultPlanColor }}
+                              aria-hidden="true"
+                            />
+                            <h3>{plan.name}</h3>
+                          </div>
+                          <span className="pill">Matérias: {planRows.length}</span>
+                        </div>
+
+                        <div className="notes-table-shell">
+                          <div
+                            className="notes-table"
+                            style={{
+                              gridTemplateColumns: `minmax(240px, 1.4fr) repeat(${planEvaluations.length}, minmax(220px, 1fr)) minmax(140px, 0.7fr) minmax(170px, 0.8fr)`
+                            }}
+                          >
+                            <div className="notes-row notes-row-header">
+                              <div>Matéria</div>
+                              {planEvaluations.map((evaluation) => (
+                                <div key={evaluation.id}>{evaluation.label}</div>
+                              ))}
+                              <div>Média Final</div>
+                              <div>Falta para passar</div>
+                            </div>
+
+                            {planRows.map((row) => (
+                              <div className="notes-row" key={row.subject.id}>
+                                <div
+                                  className={`notes-subject-cell notes-subject-cell-draggable${draggedSubject?.subjectId === String(row.subject.id) ? ' is-dragging' : ''}${dragTargetSubjectId === String(row.subject.id) && draggedSubject?.subjectId !== String(row.subject.id) && draggedSubject?.planId === String(row.subject.planId) ? ' is-drop-target' : ''}`}
+                                  draggable
+                                  onDragStart={() => handleSubjectDragStart(row.subject.id, row.subject.planId)}
+                                  onDragOver={(event) => handleSubjectDragOver(event, row.subject.id, row.subject.planId)}
+                                  onDrop={(event) => handleSubjectDrop(event, row.subject.id, row.subject.planId)}
+                                  onDragEnd={handleSubjectDragEnd}
+                                >
+                                  <span className="progress-subject-label">
+                                    <span className="notes-drag-handle" aria-hidden="true">
+                                      <DragHandleIcon />
+                                    </span>
+                                    <span
+                                      className="plan-color-dot"
+                                      style={{ '--plan-color': plan.color || defaultPlanColor }}
+                                      aria-hidden="true"
+                                    />
+                                    <span className="progress-subject-name">{row.subject.name}</span>
+                                  </span>
+                                </div>
+
+                                {planEvaluations.map((evaluation) => {
+                                  const scoreValue = row.subjectEntry.scores?.[evaluation.id] ?? ''
+                                  const proofCards = proofCardsBySubject[String(row.subject.id)]?.[
+                                    normalizeLabel(evaluation.label)
+                                  ] || []
+
+                                  return (
+                                    <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
+                                      <input
+                                        className="subject-input notes-score-input"
+                                        type="text"
+                                        inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                                        placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
+                                        value={scoreValue}
+                                        onChange={(event) =>
+                                          handleScoreChange(row.subject.id, evaluation.id, event.target.value)
+                                        }
+                                      />
+
+                                      {proofCards.length > 0 ? (
+                                        <div className="notes-proof-list">
+                                          {proofCards.map((item) => (
+                                            <article className="notes-proof-card" key={item.id}>
+                                              <strong>{formatDate(item.dueDate)}</strong>
+                                              <span>{item.notes || 'Sem descrição cadastrada.'}</span>
+                                            </article>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  )
+                                })}
+
+                                <div className="notes-metric-cell">
+                                  <strong>{formatAverageDisplay(row.average, gradingStyle)}</strong>
+                                </div>
+
+                                <div className="notes-metric-cell">
+                                  <strong className={row.missingToPass > 0 ? 'notes-missing-score' : 'notes-passing-score'}>
+                                    {formatMissingDisplay(row.missingToPass, row.planConfig.passingScore, gradingStyle)}
+                                  </strong>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </section>
+                    )
+                  })}
+              </div>
+            )
           ) : (
             <p className="empty-message">
               {selectedPlan
