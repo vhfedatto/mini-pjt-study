@@ -3,6 +3,7 @@ import SummaryCard from '../ui/SummaryCard'
 import Card from '../ui/Card'
 
 const KEY = 'question-notebooks'
+const BACKUP_KEY = 'question-notebooks-backup'
 const TRAINING_RESUME_KEY = 'question-training-resume'
 const DIREITOS_HUMANOS_RESET_KEY = 'question-training-reset-direitos-humanos-v1'
 const OPT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -35,6 +36,47 @@ function splitTags(tagValue) {
     .split(';')
     .map((item) => item.trim())
     .filter(Boolean)
+}
+
+function sanitizeNotebookCollection(rawNotebooks) {
+  if (!Array.isArray(rawNotebooks)) return []
+
+  const seenIds = new Set()
+
+  return rawNotebooks.reduce((accumulator, item, index) => {
+    if (!item || typeof item !== 'object') return accumulator
+
+    const fallbackId = Date.now() + index
+    const nextId = Number(item.id)
+    const notebookId = Number.isFinite(nextId) ? nextId : fallbackId
+    if (seenIds.has(notebookId)) return accumulator
+    seenIds.add(notebookId)
+
+    accumulator.push({
+      id: notebookId,
+      name: item.name ?? 'Caderno sem nome',
+      description: item.description ?? '',
+      tag: item.tag ?? '',
+      color: COLORS.includes(item.color) ? item.color : COLORS[index % COLORS.length],
+      createdAt: item.createdAt ?? item.updatedAt ?? Date.now(),
+      updatedAt: item.updatedAt ?? item.createdAt ?? Date.now(),
+      archived: Boolean(item.archived),
+      attempts: Array.isArray(item.attempts) ? item.attempts : [],
+      questions: Array.isArray(item.questions) ? item.questions : []
+    })
+
+    return accumulator
+  }, [])
+}
+
+function persistNotebooks(notebooks) {
+  try {
+    const sanitized = sanitizeNotebookCollection(notebooks)
+    localStorage.setItem(KEY, JSON.stringify(sanitized))
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitized))
+  } catch {
+    // Ignore storage write failures and keep in-memory state intact.
+  }
 }
 
 function resetDireitosHumanosProgressOnce() {
@@ -84,19 +126,23 @@ function readStore() {
   try {
     resetDireitosHumanosProgressOnce()
     const parsed = JSON.parse(localStorage.getItem(KEY) || '[]')
-    if (!Array.isArray(parsed)) return []
-    return parsed.map((item, i) => ({
-      id: item.id ?? Date.now() + i,
-      name: item.name ?? 'Caderno sem nome',
-      description: item.description ?? '',
-      tag: item.tag ?? '',
-      color: item.color ?? COLORS[i % COLORS.length],
-      createdAt: item.createdAt ?? item.updatedAt ?? Date.now(),
-      updatedAt: item.updatedAt ?? item.createdAt ?? Date.now(),
-      attempts: Array.isArray(item.attempts) ? item.attempts : [],
-      questions: Array.isArray(item.questions) ? item.questions : []
-    }))
-  } catch { return [] }
+    const sanitized = sanitizeNotebookCollection(parsed)
+    if (sanitized.length > 0 || !localStorage.getItem(BACKUP_KEY)) {
+      persistNotebooks(sanitized)
+      return sanitized
+    }
+  } catch {
+    // Fallback to backup below.
+  }
+
+  try {
+    const backup = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]')
+    const sanitizedBackup = sanitizeNotebookCollection(backup)
+    persistNotebooks(sanitizedBackup)
+    return sanitizedBackup
+  } catch {
+    return []
+  }
 }
 
 function ArrowLeftIcon() {
@@ -140,6 +186,37 @@ function TrashIcon() {
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ArchiveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M4 7.5h16v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-11Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M3 5.5A1.5 1.5 0 0 1 4.5 4h15A1.5 1.5 0 0 1 21 5.5v1A1.5 1.5 0 0 1 19.5 8h-15A1.5 1.5 0 0 1 3 6.5v-1Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M10 12h4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
       />
     </svg>
   )
@@ -280,6 +357,7 @@ function normalizeImportedQuestions(importedQuestions) {
 function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const importInputRef = useRef(null)
   const [notebooks, setNotebooks] = useState(() => readStore())
+  const [showArchivedShelf, setShowArchivedShelf] = useState(false)
   const [view, setView] = useState(() => (initialSelectedId ? 'detail' : 'library'))
   const [selectedId, setSelectedId] = useState(() => initialSelectedId ?? null)
   const [shelfEdit, setShelfEdit] = useState(false)
@@ -307,7 +385,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   const [alternativeCommentEditor, setAlternativeCommentEditor] = useState(null)
   const [alternativeCommentDraft, setAlternativeCommentDraft] = useState('')
 
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(notebooks)) }, [notebooks])
+  useEffect(() => { persistNotebooks(notebooks) }, [notebooks])
 
   useEffect(() => {
     if (view === 'detail' || view === 'create') {
@@ -315,14 +393,28 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     }
   }, [view, selectedId])
 
-  const selected = useMemo(() => notebooks.find((n) => n.id === selectedId) ?? null, [notebooks, selectedId])
+  const visibleNotebooks = useMemo(
+    () => notebooks.filter((notebook) => !notebook.archived),
+    [notebooks]
+  )
+  const archivedNotebooks = useMemo(
+    () => notebooks.filter((notebook) => notebook.archived),
+    [notebooks]
+  )
+  const selected = useMemo(
+    () => notebooks.find((n) => n.id === selectedId && !n.archived) ?? null,
+    [notebooks, selectedId]
+  )
   const editing = useMemo(() => notebooks.find((n) => n.id === editingId) ?? null, [notebooks, editingId])
   const editingQuestion = useMemo(
     () => selected?.questions.find((q) => q.id === editingQuestionId) ?? null,
     [selected, editingQuestionId]
   )
   const totalQuestions = useMemo(() => notebooks.reduce((t, n) => t + n.questions.length, 0), [notebooks])
-  const activeBooks = useMemo(() => notebooks.filter((n) => n.questions.length > 0).length, [notebooks])
+  const activeBooks = useMemo(
+    () => notebooks.filter((n) => !n.archived && n.questions.length > 0).length,
+    [notebooks]
+  )
   const selectedAttempts = useMemo(() => selected?.attempts ?? [], [selected])
   const reportStats = useMemo(() => {
     if (!selected || selectedAttempts.length === 0) return null
@@ -343,9 +435,14 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
 
   useEffect(() => {
     const shouldLockScroll = Boolean(editing || editingQuestion || reportOpen || settingsOpen)
+    const scrollY = window.scrollY
     const previousBodyOverflow = document.body.style.overflow
+    const previousBodyOverflowY = document.body.style.overflowY
+    const previousBodyPosition = document.body.style.position
+    const previousBodyTop = document.body.style.top
+    const previousBodyWidth = document.body.style.width
     const previousHtmlOverflow = document.documentElement.style.overflow
-    const previousBodyOverscroll = document.body.style.overscrollBehavior
+    const previousHtmlOverflowY = document.documentElement.style.overflowY
     const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior
     const scrollContainers = Array.from(document.querySelectorAll('.dashboard-layout, .dashboard-content'))
     const previousContainerStyles = scrollContainers.map((element) => ({
@@ -356,8 +453,12 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
 
     if (shouldLockScroll) {
       document.body.style.overflow = 'hidden'
+      document.body.style.overflowY = 'scroll'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
       document.documentElement.style.overflow = 'hidden'
-      document.body.style.overscrollBehavior = 'none'
+      document.documentElement.style.overflowY = 'scroll'
       document.documentElement.style.overscrollBehavior = 'none'
       document.body.classList.add('modal-scroll-locked')
       document.documentElement.classList.add('modal-scroll-locked')
@@ -369,8 +470,12 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
 
     return () => {
       document.body.style.overflow = previousBodyOverflow
+      document.body.style.overflowY = previousBodyOverflowY
+      document.body.style.position = previousBodyPosition
+      document.body.style.top = previousBodyTop
+      document.body.style.width = previousBodyWidth
       document.documentElement.style.overflow = previousHtmlOverflow
-      document.body.style.overscrollBehavior = previousBodyOverscroll
+      document.documentElement.style.overflowY = previousHtmlOverflowY
       document.documentElement.style.overscrollBehavior = previousHtmlOverscroll
       document.body.classList.remove('modal-scroll-locked')
       document.documentElement.classList.remove('modal-scroll-locked')
@@ -378,12 +483,13 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
         element.style.overflow = overflow
         element.style.overscrollBehavior = overscrollBehavior
       })
+      if (shouldLockScroll) window.scrollTo(0, scrollY)
     }
   }, [editing, editingQuestion, reportOpen, settingsOpen])
 
   useLayoutEffect(() => {
     if (!initialSelectedId) return
-    const notebookExists = notebooks.some((notebook) => notebook.id === initialSelectedId)
+    const notebookExists = notebooks.some((notebook) => notebook.id === initialSelectedId && !notebook.archived)
     if (!notebookExists) return
     setSelectedId(initialSelectedId)
     setView('detail')
@@ -392,7 +498,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   }, [initialSelectedId])
 
   const goLibrary = () => { setView('library'); setSelectedId(null); setQuestionOpen(false); setQuestionForm(emptyQuestion()); setReportOpen(false) }
-  const openDetail = (id) => { setSelectedId(id); setView('detail'); setQuestionOpen(false); setShelfEdit(false); setReportOpen(false) }
+  const openDetail = (id) => { setSelectedId(id); setView('detail'); setQuestionOpen(false); setShelfEdit(false); setReportOpen(false); setShowArchivedShelf(false) }
   const openEditor = (book) => { setEditingId(book.id); setEditForm({ name: book.name, description: book.description, tag: book.tag, color: book.color }) }
   const closeEditor = () => { setEditingId(null); setEditForm(emptyNotebook()) }
   const closeQuestionEditor = () => { setEditingQuestionId(null); setEditingQuestionForm(emptyQuestion()); setAlternativeCommentEditor(null); setAlternativeCommentDraft('') }
@@ -469,12 +575,27 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     closeEditor()
   }
 
+  function deleteNotebookById(notebookId, notebookName) {
+    if (!window.confirm(`Excluir o caderno "${notebookName}"?`)) return
+    setNotebooks((previous) => previous.filter((notebook) => notebook.id !== notebookId))
+    if (selectedId === notebookId) goLibrary()
+    if (editingId === notebookId) closeEditor()
+  }
+
   function deleteBook() {
     if (!editing) return
-    if (!window.confirm(`Excluir o caderno "${editing.name}"?`)) return
-    setNotebooks((p) => p.filter((n) => n.id !== editing.id))
-    if (selectedId === editing.id) goLibrary()
-    closeEditor()
+    deleteNotebookById(editing.id, editing.name)
+  }
+
+  function toggleNotebookArchive(notebookId, shouldArchive) {
+    setNotebooks((previous) => previous.map((notebook) => (
+      notebook.id === notebookId
+        ? { ...notebook, archived: shouldArchive, updatedAt: Date.now() }
+        : notebook
+    )))
+
+    if (shouldArchive && selectedId === notebookId) goLibrary()
+    if (editingId === notebookId) closeEditor()
   }
 
   function addAlt() { setQuestionForm((p) => ({ ...p, alternatives: [...p.alternatives, createEmptyAlternative()] })) }
@@ -678,18 +799,21 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       return
     }
 
-    const draggedIndex = notebooks.findIndex((notebook) => notebook.id === draggedNotebookId)
-    const targetIndex = notebooks.findIndex((notebook) => notebook.id === targetNotebookId)
+    const sourceNotebooks = showArchivedShelf ? archivedNotebooks : visibleNotebooks
+    const draggedIndex = sourceNotebooks.findIndex((notebook) => notebook.id === draggedNotebookId)
+    const targetIndex = sourceNotebooks.findIndex((notebook) => notebook.id === targetNotebookId)
 
     if (draggedIndex === -1 || targetIndex === -1) {
       handleNotebookDragEnd()
       return
     }
 
-    const reorderedNotebooks = [...notebooks]
-    const [movedNotebook] = reorderedNotebooks.splice(draggedIndex, 1)
-    reorderedNotebooks.splice(targetIndex, 0, movedNotebook)
-    setNotebooks(reorderedNotebooks)
+    const reorderedVisible = [...sourceNotebooks]
+    const [movedNotebook] = reorderedVisible.splice(draggedIndex, 1)
+    reorderedVisible.splice(targetIndex, 0, movedNotebook)
+
+    const preserved = notebooks.filter((notebook) => Boolean(notebook.archived) !== showArchivedShelf)
+    setNotebooks(showArchivedShelf ? [...preserved, ...reorderedVisible] : [...reorderedVisible, ...preserved])
     handleNotebookDragEnd()
   }
 
@@ -992,7 +1116,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   return (
     <>
       <section className="summary-grid">
-        <SummaryCard title="Cadernos" value={notebooks.length} description="Coleções para organizar suas questões" />
+        <SummaryCard title="Cadernos" value={visibleNotebooks.length} description="Coleções ativas para organizar suas questões" />
         <SummaryCard title="Questões salvas" value={totalQuestions} description="Itens prontos para treino futuro" />
         <SummaryCard title="Cadernos ativos" value={activeBooks} description="Cadernos que já possuem questões" />
       </section>
@@ -1000,22 +1124,32 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
       {view === 'library' ? <section className="notebooks-library-layout"><Card><section className="panel-section">
         <div className="notebooks-library-header">
           <div><h2 className="section-title">Estante de cadernos</h2><p className="flashcards-helper">Abra um caderno para estudar ou ative a edição da estante para alterar os volumes existentes.</p></div>
-          <div className="notebooks-library-actions"><button type="button" className={`plan-action-btn${shelfEdit ? ' is-active' : ''}`} onClick={() => setShelfEdit((p) => !p)}>{shelfEdit ? 'Concluir edição' : 'Editar estante'}</button><button type="button" className="header-button header-button-secondary notebook-shelf-settings-button" onClick={openNotebookSettings}><span className="notebook-inline-icon"><SettingsIcon /></span><span>Configurações</span></button></div>
+          <div className="notebooks-library-actions"><button type="button" className={`plan-action-btn${shelfEdit ? ' is-active' : ''}`} onClick={() => setShelfEdit((p) => !p)}>{shelfEdit ? 'Concluir edição' : 'Editar estante'}</button><button type="button" className={`header-button header-button-secondary notebook-icon-action-button${showArchivedShelf ? ' is-active' : ''}`} onClick={() => { setShowArchivedShelf(true); setShelfEdit(false) }} aria-label="Ver cadernos arquivados" title="Ver cadernos arquivados"><span className="notebook-inline-icon"><ArchiveIcon /></span></button><button type="button" className="header-button header-button-secondary notebook-shelf-settings-button" onClick={openNotebookSettings}><span className="notebook-inline-icon"><SettingsIcon /></span><span>Configurações</span></button></div>
         </div>
         <div className="notebooks-shelf">
-          {notebooks.map((n) => <button key={n.id} type="button" className={`notebook-book notebook-book--${n.color} notebook-book-draggable ${draggedNotebookId === n.id ? 'is-dragging' : ''} ${dragOverNotebookId === n.id && draggedNotebookId !== n.id ? 'is-drop-target' : ''}`} draggable onDragStart={() => handleNotebookDragStart(n.id)} onDragOver={(event) => handleNotebookDragOver(event, n.id)} onDrop={(event) => handleNotebookDrop(event, n.id)} onDragEnd={handleNotebookDragEnd} onClick={() => shelfEdit ? openEditor(n) : openDetail(n.id)}>
-            <span className="notebook-book-spine" aria-hidden="true" />
-            <span className="notebook-book-topline">{shelfEdit ? 'Editar caderno' : 'Caderno'}</span>
-            <strong>{n.name}</strong>
-            {splitTags(n.tag).length > 0 ? <div className="notebook-book-tags">{splitTags(n.tag).map((tag) => <span key={tag} className="notebook-book-tag">{tag}</span>)}</div> : null}
-            <div className="notebook-book-meta"><span>{n.questions.length} questão(ões)</span><span>Última edição em {fmt(n.updatedAt)}</span></div>
-          </button>)}
+          {visibleNotebooks.map((n) => <article key={n.id} className={`notebook-book-shell ${draggedNotebookId === n.id ? 'is-dragging' : ''} ${dragOverNotebookId === n.id && draggedNotebookId !== n.id ? 'is-drop-target' : ''}`} draggable={shelfEdit} onDragStart={() => handleNotebookDragStart(n.id)} onDragOver={(event) => shelfEdit ? handleNotebookDragOver(event, n.id) : undefined} onDrop={(event) => shelfEdit ? handleNotebookDrop(event, n.id) : undefined} onDragEnd={handleNotebookDragEnd}>
+            {shelfEdit ? <div className="notebook-book-card-actions">
+              <button type="button" className="notebook-book-card-action notebook-book-card-action-delete" onClick={() => deleteNotebookById(n.id, n.name)} aria-label={`Excluir o caderno ${n.name}`} title="Excluir caderno">
+                <TrashIcon />
+              </button>
+              <button type="button" className="notebook-book-card-action" onClick={() => toggleNotebookArchive(n.id, !n.archived)} aria-label={n.archived ? `Desarquivar o caderno ${n.name}` : `Arquivar o caderno ${n.name}`} title={n.archived ? 'Desarquivar caderno' : 'Arquivar caderno'}>
+                <ArchiveIcon />
+              </button>
+            </div> : null}
+            <button type="button" className={`notebook-book notebook-book--${n.color} ${shelfEdit ? 'notebook-book-draggable is-editing' : ''} ${n.archived ? 'is-archived' : ''}`} onClick={() => shelfEdit ? openEditor(n) : openDetail(n.id)}>
+              <span className="notebook-book-spine" aria-hidden="true" />
+              <span className="notebook-book-topline">{shelfEdit ? 'Editar caderno' : 'Caderno'}</span>
+              <strong>{n.name}</strong>
+              {splitTags(n.tag).length > 0 ? <div className="notebook-book-tags">{splitTags(n.tag).map((tag) => <span key={tag} className="notebook-book-tag">{tag}</span>)}</div> : null}
+              <div className="notebook-book-meta"><span>{n.questions.length} questão(ões)</span><span>Última edição em {fmt(n.updatedAt)}</span></div>
+            </button>
+          </article>)}
           <button type="button" className="notebook-book notebook-book-add" onClick={() => { setView('create'); setShelfEdit(false) }}>
             <span className="notebook-book-plus" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
             <strong>Novo caderno</strong><p>Adicione outro volume ao final da estante e personalize cor, tag e descrição.</p>
           </button>
         </div>
-        {notebooks.length === 0 ? <p className="empty-message">Sua estante ainda está vazia. Use o caderno com `+` para criar o primeiro.</p> : null}
+        {visibleNotebooks.length === 0 ? <p className="empty-message">Sua estante ainda está vazia. Use o caderno com `+` para criar o primeiro.</p> : null}
       </section></Card></section> : null}
 
       {view === 'create' ? <section className="notebook-page-layout"><Card><section className="panel-section">
@@ -1050,6 +1184,30 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
           <div className="notebook-edit-meta"><span>Criado em {fmt(editing.createdAt)}</span><span>Última edição em {fmt(editing.updatedAt)}</span></div>
           <div className="notebook-edit-actions"><button type="submit" className="subject-add-button">Salvar alterações</button><button type="button" className="header-button header-button-secondary" onClick={closeEditor}>Cancelar</button><button type="button" className="plan-action-btn notebook-delete-btn" onClick={deleteBook}>Excluir caderno</button></div>
         </form>
+      </div></div> : null}
+
+      {showArchivedShelf ? <div className="plan-modal-overlay" onClick={() => setShowArchivedShelf(false)}><div className="plan-modal notebook-archived-modal" role="dialog" aria-modal="true" aria-labelledby="archived-notebooks-title" onClick={(e) => e.stopPropagation()}>
+        <div className="important-date-modal-header"><div><h2 id="archived-notebooks-title" className="plan-modal-title">Cadernos arquivados</h2><p className="flashcards-helper">Para entrar novamente em um caderno, desarquive-o primeiro.</p></div><button type="button" className="modal-close-button" onClick={() => setShowArchivedShelf(false)} aria-label="Fechar cadernos arquivados">×</button></div>
+        <div className="notebook-archived-grid">
+          {archivedNotebooks.map((n) => <article key={n.id} className="notebook-book-shell notebook-book-shell-compact">
+            <div className="notebook-book-card-actions">
+              <button type="button" className="notebook-book-card-action notebook-book-card-action-delete" onClick={() => deleteNotebookById(n.id, n.name)} aria-label={`Excluir o caderno ${n.name}`} title="Excluir caderno">
+                <TrashIcon />
+              </button>
+              <button type="button" className="notebook-book-card-action" onClick={() => toggleNotebookArchive(n.id, false)} aria-label={`Desarquivar o caderno ${n.name}`} title="Desarquivar caderno">
+                <ArchiveIcon />
+              </button>
+            </div>
+            <button type="button" className={`notebook-book notebook-book--${n.color} notebook-book-compact is-archived`} onClick={() => undefined} disabled>
+              <span className="notebook-book-spine" aria-hidden="true" />
+              <span className="notebook-book-topline">Arquivado</span>
+              <strong>{n.name}</strong>
+              {splitTags(n.tag).length > 0 ? <div className="notebook-book-tags">{splitTags(n.tag).map((tag) => <span key={tag} className="notebook-book-tag">{tag}</span>)}</div> : null}
+              <div className="notebook-book-meta"><span>{n.questions.length} questão(ões)</span><span>Desarquive para abrir este caderno.</span></div>
+            </button>
+          </article>)}
+        </div>
+        {archivedNotebooks.length === 0 ? <p className="empty-message">Você ainda não arquivou nenhum caderno.</p> : null}
       </div></div> : null}
 
       {editingQuestion ? <div className="plan-modal-overlay" onClick={closeQuestionEditor}><div className="plan-modal notebook-edit-modal notebook-question-modal" role="dialog" aria-modal="true" aria-labelledby="question-edit-title" onClick={(e) => e.stopPropagation()}>
