@@ -10,10 +10,13 @@ import Ranking from './pages/Ranking'
 import Login from './pages/Login'
 import Sidebar from './components/layout/Sidebar'
 import QuestionTraining from './pages/QuestionTraining'
+import { sanitizeStudyStorage } from './utils/storageSanitizers'
 
 const SIDEBAR_BREAKPOINT = 1180
 
 function App() {
+  sanitizeStudyStorage()
+
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem('studydash-session') === 'authenticated'

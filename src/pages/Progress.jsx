@@ -12,6 +12,29 @@ const DEFAULT_EVALUATIONS = [
   { id: 'av2', label: 'AV2' }
 ]
 
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 8.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-1.5 1.5a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.2 1.2 0 0 1-1.2 1.2h-2.2A1.2 1.2 0 0 1 10 20v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0L5 17.7a1.2 1.2 0 0 1 0-1.7l.1-.1A1 1 0 0 0 5.3 15a1 1 0 0 0-.9-.6H4.2A1.2 1.2 0 0 1 3 13.2v-2.1A1.2 1.2 0 0 1 4.2 10h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1L5 8.2a1.2 1.2 0 0 1 0-1.7L6.5 5a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4.2A1.2 1.2 0 0 1 11.2 3h2.1a1.2 1.2 0 0 1 1.2 1.2v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0L19 6.5a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 21 11.2v2.1a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  )
+}
+
 function readJSON(key, fallback) {
   try {
     const stored = localStorage.getItem(key)
@@ -57,6 +80,13 @@ function parseNumber(value) {
   const normalized = String(value).replace(',', '.')
   const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatScoreInput(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits.length === 1) return digits
+  return `${digits.slice(0, -1)},${digits.slice(-1)}`
 }
 
 function createPlanGradeConfig(subjectIds = []) {
@@ -135,6 +165,7 @@ function Progress() {
   )
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [newEvaluationName, setNewEvaluationName] = useState('')
+  const [isConfigOpen, setIsConfigOpen] = useState(false)
 
   useEffect(() => {
     const syncData = () => {
@@ -265,6 +296,8 @@ function Progress() {
     const map = {}
 
     importantDates.forEach((item) => {
+      if (item.completed) return
+
       const subjectId = String(item.subjectId)
       const evaluationKey = normalizeLabel(item.title)
       if (!subjectId || !evaluationKey) return
@@ -317,12 +350,13 @@ function Progress() {
   const passingRows = gradeRows.filter((row) => row.average !== null && row.average >= (parseNumber(row.planConfig.passingScore) ?? 0)).length
   const pendingProofCards = useMemo(() => {
     const today = new Date().toISOString().split('T')[0]
-    return importantDates.filter((item) => item.dueDate && item.dueDate >= today).length
+    return importantDates.filter((item) => item.dueDate && item.dueDate >= today && !item.completed).length
   }, [importantDates])
 
-  const handlePlanChange = (event) => {
-    setSelectedPlanId(event.target.value)
+  const handlePlanChange = (planId) => {
+    setSelectedPlanId((currentPlanId) => (currentPlanId === planId ? '' : planId))
     setNewEvaluationName('')
+    setIsConfigOpen(false)
   }
 
   const updatePlanConfig = (planKey, updater) => {
@@ -457,7 +491,7 @@ function Progress() {
       ...entry,
       scores: {
         ...(entry.scores || {}),
-        [evaluationId]: value
+        [evaluationId]: formatScoreInput(value)
       }
     }))
   }
@@ -496,31 +530,92 @@ function Progress() {
             <div>
               <h2 className="section-title">Notas por matéria</h2>
               <p className="settings-helper">
-                Selecione um plano para configurar nota de corte, colunas de avaliação e quais matérias entram na tabela.
+                Selecione um plano pelos cards abaixo. A edição da tabela fica concentrada no botão de configurações.
               </p>
             </div>
 
             <div className="notes-toolbar-controls">
-              <div className="plan-field-group notes-plan-filter">
-                <label className="plan-field-label" htmlFor="notes-plan-filter">Plano</label>
-                <select
-                  id="notes-plan-filter"
-                  className="subject-input"
-                  value={selectedPlanId}
-                  onChange={handlePlanChange}
-                >
-                  <option value="">Todos os planos</option>
-                  {plans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <button
+                type="button"
+                className="notes-settings-trigger"
+                onClick={() => setIsConfigOpen(true)}
+                aria-label={selectedPlan ? `Abrir configurações de ${selectedPlan.name}` : 'Selecione um plano para configurar'}
+                title={selectedPlan ? 'Configurações da tabela' : 'Selecione um plano para configurar'}
+                disabled={!selectedPlan}
+              >
+                <GearIcon />
+              </button>
             </div>
           </div>
 
-          {selectedPlan ? (
+          <div className="notes-plan-cards">
+            {plans.map((plan) => {
+              const subjectCount = subjects.filter((subject) => String(subject.planId) === String(plan.id)).length
+              const isActive = selectedPlanId === String(plan.id)
+
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  className={`notes-plan-card${isActive ? ' is-active' : ''}`}
+                  onClick={() => handlePlanChange(String(plan.id))}
+                >
+                  <div className="notes-plan-card-header">
+                    <div className="notes-plan-card-title">
+                      <span
+                        className="plan-color-dot"
+                        style={{ '--plan-color': plan.color || defaultPlanColor }}
+                        aria-hidden="true"
+                      />
+                      <h3>{plan.name}</h3>
+                    </div>
+                  </div>
+                  <div className="notes-plan-card-meta">
+                    <span className="pill">Matérias: {subjectCount}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {!selectedPlan ? (
+            <div className="notes-all-plans-tip">
+              <p>
+                Nenhum plano está selecionado. A tabela mostra todas as matérias e notas ao mesmo tempo.
+              </p>
+            </div>
+          ) : null}
+        </section>
+      </Card>
+
+      {selectedPlan && isConfigOpen ? (
+        <div
+          className="plan-modal-overlay"
+          role="presentation"
+          onClick={() => setIsConfigOpen(false)}
+        >
+          <div
+            className="plan-modal notes-config-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="notes-config-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="notes-config-modal-header">
+              <div>
+                <h2 id="notes-config-title" className="plan-modal-title">Configurações da tabela</h2>
+                <p className="settings-helper">{selectedPlan.name}</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsConfigOpen(false)}
+                aria-label="Fechar configurações"
+              >
+                ×
+              </button>
+            </div>
+
             <div className="notes-config-grid">
               <div className="notes-config-card">
                 <div className="notes-config-header">
@@ -538,9 +633,8 @@ function Progress() {
                   <input
                     id="notes-passing-score"
                     className="subject-input"
-                    type="number"
-                    min="0"
-                    step="0.1"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="Ex: 6"
                     value={activePlanConfig?.passingScore || ''}
                     onChange={(event) => handlePassingScoreChange(event.target.value)}
@@ -621,15 +715,9 @@ function Progress() {
                 )}
               </div>
             </div>
-          ) : (
-            <div className="notes-all-plans-tip">
-              <p>
-                Todos os planos estão visíveis. Selecione um plano para definir nota de corte, ajustar as colunas de avaliação e escolher as matérias da tabela.
-              </p>
-            </div>
-          )}
-        </section>
-      </Card>
+          </div>
+        </div>
+      ) : null}
 
       <Card>
         <section className="panel-section notes-table-section">
@@ -695,9 +783,8 @@ function Progress() {
                             {evaluationForSubject ? (
                               <input
                                 className="subject-input notes-score-input"
-                                type="number"
-                                min="0"
-                                step="0.1"
+                                type="text"
+                                inputMode="decimal"
                                 placeholder="0,0"
                                 value={scoreValue}
                                 onChange={(event) =>
