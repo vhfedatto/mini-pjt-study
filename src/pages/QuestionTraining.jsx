@@ -45,6 +45,36 @@ function NotesIcon() {
   )
 }
 
+function PresentationIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M4.75 5.75A1.75 1.75 0 0 1 6.5 4h11A1.75 1.75 0 0 1 19.25 5.75v8.5A1.75 1.75 0 0 1 17.5 16h-4.25v2.75H16a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5h2.75V16H6.5a1.75 1.75 0 0 1-1.75-1.75Zm1.5-.25v8.5a.25.25 0 0 0 .25.25h11a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25h-11a.25.25 0 0 0-.25.25Zm2.25 2.25h7.5m-7.5 3h4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ZoomInIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M10.5 5.75a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5Zm0 2.1v5.3m-2.65-2.65h5.3M14.3 14.3 18.25 18.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -313,6 +343,9 @@ function QuestionTraining({ notebookId, onExit }) {
   const [sessionAnswerHistory, setSessionAnswerHistory] = useState({})
   const [questionOrder, setQuestionOrder] = useState([])
   const [isNotesOpen, setIsNotesOpen] = useState(false)
+  const [isPresentationMode, setIsPresentationMode] = useState(false)
+  const [isSupportTextScaleOpen, setIsSupportTextScaleOpen] = useState(false)
+  const [supportTextScale, setSupportTextScale] = useState(1)
   const [notesDraft, setNotesDraft] = useState('')
   const [isExitPromptOpen, setIsExitPromptOpen] = useState(false)
 
@@ -336,6 +369,9 @@ function QuestionTraining({ notebookId, onExit }) {
     setQuestionOrder(nextQuestionOrder)
     setCurrentIndex(Math.min(resume?.currentIndex ?? 0, questionsLength))
     setIsNotesOpen(false)
+    setIsPresentationMode(false)
+    setIsSupportTextScaleOpen(false)
+    setSupportTextScale(1)
     setIsExitPromptOpen(false)
     setSessionAnswerHistory({})
   }, [notebookId])
@@ -364,6 +400,11 @@ function QuestionTraining({ notebookId, onExit }) {
   const allQuestionsSubmitted = questions.length > 0 && questions.every((question) => sessionState[question.id]?.submitted)
   const isSummaryView = questions.length > 0 && currentIndex === questions.length
   const hasSessionProgress = Object.values(sessionState).some((entry) => entry?.selectedAlternative || entry?.submitted)
+
+  useEffect(() => {
+    setIsSupportTextScaleOpen(false)
+    setSupportTextScale(1)
+  }, [currentQuestion?.id])
 
   useEffect(() => {
     if (!currentQuestion) return
@@ -587,8 +628,9 @@ function QuestionTraining({ notebookId, onExit }) {
   }
 
   return (
-    <section className={`question-training-shell${submitted ? (isCorrect ? ' is-success' : ' is-error') : ''}`}>
-      <div className="question-training-topbar">
+    <section className={`question-training-shell${submitted ? (isCorrect ? ' is-success' : ' is-error') : ''}${isPresentationMode ? ' is-presentation' : ''}`}>
+      {!isPresentationMode ? (
+        <div className="question-training-topbar">
         <button type="button" className="question-training-exit" onClick={handleAttemptExit}>
           <span className="question-training-exit-icon">
             <ArrowLeftIcon />
@@ -659,7 +701,8 @@ function QuestionTraining({ notebookId, onExit }) {
             </button>
           </div>
         ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {!notebook || questions.length === 0 ? (
         <div className="question-training-empty">
@@ -737,8 +780,8 @@ function QuestionTraining({ notebookId, onExit }) {
       ) : null}
 
       {currentQuestion && !isSummaryView ? (
-        <div className="question-training-stage">
-          <article className="question-training-card">
+        <div className={`question-training-stage${isPresentationMode ? ' is-presentation' : ''}`}>
+          <article className={`question-training-card${isPresentationMode ? ' is-presentation' : ''}`}>
             <header className="question-training-card-header">
               <div className="question-training-meta">
                 <span className="question-training-pill">{currentQuestion.bank}</span>
@@ -749,81 +792,130 @@ function QuestionTraining({ notebookId, onExit }) {
               </span>
             </header>
 
-            <div className="question-training-statement-block">
-              <span className="question-training-number">Questão {currentIndex + 1}</span>
-              <h1 className="question-training-statement">{currentQuestion.statement}</h1>
-              {currentQuestion.supportText ? <p className="question-training-support">{currentQuestion.supportText}</p> : null}
-            </div>
-
-            <div className="question-training-alternatives">
-              {displayAlternatives.map((alternative) => {
-                const isSelected = selectedAlternative === alternative.label
-                const isRight = submitted && alternative.label === currentQuestion.correctAlternative
-                const isWrongSelection = submitted && isSelected && alternative.label !== currentQuestion.correctAlternative
-                const isCut = cutAlternatives.includes(alternative.label)
-                const answerCount = (currentQuestion.answerHistory?.[alternative.label] ?? 0) + ((sessionAnswerHistory[currentQuestion.id] ?? {})[alternative.label] ?? 0)
-                const answerPercentage = totalAnswers > 0 ? Math.round((answerCount / totalAnswers) * 100) : 0
-
-                return (
+            <div className={`question-training-content${isPresentationMode ? ' is-presentation' : ''}`}>
+              <div className="question-training-statement-block">
+                <span className="question-training-number">Questão {currentIndex + 1}</span>
+                <h1 className="question-training-statement">{currentQuestion.statement}</h1>
+                {currentQuestion.supportText ? (
                   <div
-                    key={alternative.label}
-                    className={`question-training-alternative${isSelected ? ' is-selected' : ''}${isRight ? ' is-right' : ''}${isWrongSelection ? ' is-wrong' : ''}${isCut ? ' is-cut' : ''}${submitted && alternative.comment?.trim() ? ' has-comment' : ''}`}
+                    className={`question-training-support-card${isPresentationMode ? ' is-presentation' : ''}${isSupportTextScaleOpen ? ' is-scale-open' : ''}`}
+                    style={isPresentationMode ? { '--question-training-support-scale': supportTextScale } : undefined}
                   >
-                    <div
-                      role="button"
-                      tabIndex={submitted ? -1 : 0}
-                      className="question-training-alternative-surface"
-                      onClick={() => handleSelectAlternative(alternative.label)}
-                      onKeyDown={(event) => {
-                        if (submitted) return
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          handleSelectAlternative(alternative.label)
-                        }
-                      }}
-                    >
-                      {!submitted ? (
-                        <span className="question-training-cut-action-wrapper">
-                          <button
-                            type="button"
-                            className={`question-training-cut-action${isCut ? ' is-active' : ''}`}
-                            onClick={(event) => toggleCutAlternative(event, alternative.label)}
-                            aria-label={isCut ? `Restaurar alternativa ${alternative.displayLabel}` : `Cortar alternativa ${alternative.displayLabel}`}
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                              <path
-                                d="M6.25 7.25a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Zm0 0L18.5 19.5m-12.25-2.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM10.5 14.5l8-8"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.9"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </button>
-                        </span>
-                      ) : null}
-                      <span className="question-training-alternative-label">{alternative.displayLabel}</span>
-                      <span className="question-training-alternative-text">{alternative.text}</span>
-                      {submitted ? <span className="question-training-alternative-stats">{answerPercentage}%</span> : null}
-                    </div>
-                    {submitted && alternative.comment?.trim() ? (
-                      <div className="question-training-alternative-comment">
-                        {alternative.comment}
+                    {isPresentationMode ? (
+                      <div className="question-training-support-toolbar">
+                        <button
+                          type="button"
+                          className={`question-training-support-zoom-button${isSupportTextScaleOpen ? ' is-active' : ''}`}
+                          onClick={() => setIsSupportTextScaleOpen((previous) => !previous)}
+                          aria-pressed={isSupportTextScaleOpen}
+                          aria-label={isSupportTextScaleOpen ? 'Fechar ajuste do tamanho da fonte do texto complementar' : 'Abrir ajuste do tamanho da fonte do texto complementar'}
+                          title="Ajustar tamanho da fonte do texto complementar"
+                        >
+                          <ZoomInIcon />
+                        </button>
+                        {isSupportTextScaleOpen ? (
+                          <label className="question-training-support-scale-control">
+                            <span>Tamanho da fonte</span>
+                            <input
+                              type="range"
+                              min="1"
+                              max="2.4"
+                              step="0.1"
+                              value={supportTextScale}
+                              onChange={(event) => setSupportTextScale(Number(event.target.value))}
+                            />
+                          </label>
+                        ) : null}
                       </div>
                     ) : null}
+                    <p className="question-training-support">{currentQuestion.supportText}</p>
                   </div>
-                )
-              })}
+                ) : null}
+              </div>
+
+              <div className="question-training-alternatives">
+                {displayAlternatives.map((alternative) => {
+                  const isSelected = selectedAlternative === alternative.label
+                  const isRight = submitted && alternative.label === currentQuestion.correctAlternative
+                  const isWrongSelection = submitted && isSelected && alternative.label !== currentQuestion.correctAlternative
+                  const isCut = cutAlternatives.includes(alternative.label)
+                  const answerCount = (currentQuestion.answerHistory?.[alternative.label] ?? 0) + ((sessionAnswerHistory[currentQuestion.id] ?? {})[alternative.label] ?? 0)
+                  const answerPercentage = totalAnswers > 0 ? Math.round((answerCount / totalAnswers) * 100) : 0
+
+                  return (
+                    <div
+                      key={alternative.label}
+                      className={`question-training-alternative${isSelected ? ' is-selected' : ''}${isRight ? ' is-right' : ''}${isWrongSelection ? ' is-wrong' : ''}${isCut ? ' is-cut' : ''}${submitted && alternative.comment?.trim() ? ' has-comment' : ''}`}
+                    >
+                      <div
+                        role="button"
+                        tabIndex={submitted ? -1 : 0}
+                        className="question-training-alternative-surface"
+                        onClick={() => handleSelectAlternative(alternative.label)}
+                        onKeyDown={(event) => {
+                          if (submitted) return
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            handleSelectAlternative(alternative.label)
+                          }
+                        }}
+                      >
+                        {!submitted ? (
+                          <span className="question-training-cut-action-wrapper">
+                            <button
+                              type="button"
+                              className={`question-training-cut-action${isCut ? ' is-active' : ''}`}
+                              onClick={(event) => toggleCutAlternative(event, alternative.label)}
+                              aria-label={isCut ? `Restaurar alternativa ${alternative.displayLabel}` : `Cortar alternativa ${alternative.displayLabel}`}
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path
+                                  d="M6.25 7.25a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Zm0 0L18.5 19.5m-12.25-2.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5ZM10.5 14.5l8-8"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.9"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </button>
+                          </span>
+                        ) : null}
+                        <span className="question-training-alternative-label">{alternative.displayLabel}</span>
+                        <span className="question-training-alternative-text">{alternative.text}</span>
+                        {submitted ? <span className="question-training-alternative-stats">{answerPercentage}%</span> : null}
+                      </div>
+                      {submitted && alternative.comment?.trim() ? (
+                        <div className="question-training-alternative-comment">
+                          {alternative.comment}
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
-            <div className="question-training-actions">
-              <button type="button" className="question-training-notes-trigger" onClick={() => setIsNotesOpen(true)}>
-                <span className="question-training-notes-trigger-icon">
-                  <NotesIcon />
-                </span>
-                Notas da questão
-              </button>
+            <div className={`question-training-actions${isPresentationMode ? ' is-presentation' : ''}`}>
+              <div className="question-training-secondary-actions">
+                <button type="button" className="question-training-toolbar-button" onClick={() => setIsNotesOpen(true)}>
+                  <span className="question-training-toolbar-button-icon">
+                    <NotesIcon />
+                  </span>
+                  Notas da questão
+                </button>
+                <button
+                  type="button"
+                  className={`question-training-toolbar-button${isPresentationMode ? ' is-active' : ''}`}
+                  onClick={() => setIsPresentationMode((previous) => !previous)}
+                  aria-pressed={isPresentationMode}
+                >
+                  <span className="question-training-toolbar-button-icon">
+                    <PresentationIcon />
+                  </span>
+                  Modo apresentação
+                </button>
+              </div>
               <button
                 type="button"
                 className="question-training-submit"
