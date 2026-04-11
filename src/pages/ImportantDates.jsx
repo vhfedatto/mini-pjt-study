@@ -161,18 +161,21 @@ function ImportantDates() {
     <section className="dashboard-content">
       <Header />
 
-      <section className="summary-grid">
+      <section className="summary-grid summary-grid--provas">
         <SummaryCard
+          className="summary-card--provas-cadastradas"
           title="Datas cadastradas"
           value={importantDates.length}
           description="Provas e marcos importantes registrados"
         />
         <SummaryCard
+          className="summary-card--provas-definidas"
           title="Com data definida"
           value={upcomingCount}
           description="Eventos com prazo exato"
         />
         <SummaryCard
+          className="summary-card--provas-proxima"
           title="Próxima avaliação"
           value={nextPendingDate ? nextPendingDate.subjectName : 'Sem datas'}
           description={

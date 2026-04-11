@@ -546,28 +546,33 @@ function Agenda() {
     <section className="dashboard-content">
       <Header />
 
-      <section className="summary-grid">
+      <section className="summary-grid summary-grid--agenda">
         <SummaryCard
+          className="summary-card--agenda-eventos"
           title="Eventos na agenda"
           value={sortedAgendaItems.length}
           description="Blocos agendados em datas específicas"
         />
         <SummaryCard
+          className="summary-card--agenda-hoje"
           title="Para hoje"
           value={todayItems.length}
           description={`${formatDateLabel(todayKey, { weekday: 'long', day: '2-digit', month: '2-digit' })} com eventos planejados`}
         />
         <SummaryCard
+          className="summary-card--agenda-materias"
           title="Matérias na agenda"
           value={subjectsInAgenda}
           description="Disciplinas vinculadas aos eventos"
         />
         <SummaryCard
+          className="summary-card--agenda-provas"
           title="Provas pendentes"
           value={pendingImportantDates.length}
           description="Avaliações ainda não concluídas"
         />
         <SummaryCard
+          className="summary-card--agenda-proximo"
           title="Próximo horário"
           value={upcomingItem ? `${upcomingItem.startTime} - ${upcomingItem.endTime}` : 'Sem horários'}
           description={

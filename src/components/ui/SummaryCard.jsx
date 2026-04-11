@@ -1,6 +1,6 @@
-function SummaryCard({ title, value = 0, description, variant = 'default', icon = null }) {
+function SummaryCard({ title, value = 0, description, variant = 'default', icon = null, className = '' }) {
     return (
-        <article className={`summary-card summary-card--${variant}`}>
+        <article className={`summary-card summary-card--${variant}${className ? ` ${className}` : ''}`}>
             <div className="summary-card-header">
                 <h3 className="summary-card-title">{title}</h3>
                 {icon ? <span className="summary-card-icon" aria-hidden="true">{icon}</span> : null}

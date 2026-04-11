@@ -1090,6 +1090,116 @@ body.modal-scroll-locked .dashboard-content {
   max-width: none;
 }
 
+.summary-grid--agenda .summary-card,
+.summary-grid--cadernos .summary-card,
+.summary-grid--provas .summary-card,
+.summary-grid--notas .summary-card {
+  min-height: 156px;
+  gap: 12px;
+  padding: 18px 18px 16px;
+}
+
+.summary-grid--agenda .summary-card-title,
+.summary-grid--cadernos .summary-card-title,
+.summary-grid--provas .summary-card-title,
+.summary-grid--notas .summary-card-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+}
+
+.summary-grid--agenda .summary-card-value,
+.summary-grid--cadernos .summary-card-value,
+.summary-grid--provas .summary-card-value,
+.summary-grid--notas .summary-card-value {
+  font-size: clamp(1.55rem, 1.2rem + 0.65vw, 2rem);
+  max-width: none;
+}
+
+.summary-grid--agenda .summary-card-description,
+.summary-grid--cadernos .summary-card-description,
+.summary-grid--provas .summary-card-description,
+.summary-grid--notas .summary-card-description {
+  max-width: none;
+  font-size: 0.9rem;
+}
+
+.summary-grid--agenda .summary-card::before,
+.summary-grid--cadernos .summary-card::before,
+.summary-grid--provas .summary-card::before,
+.summary-grid--notas .summary-card::before {
+  width: 110px;
+  height: 110px;
+  right: -28px;
+  top: -34px;
+}
+
+.summary-card--agenda-eventos {
+  --summary-accent: #2f6c88;
+}
+
+.summary-card--agenda-hoje {
+  --summary-accent: #4b6b3c;
+}
+
+.summary-card--agenda-materias {
+  --summary-accent: #7a4a2f;
+}
+
+.summary-card--agenda-provas {
+  --summary-accent: #8b5e1f;
+}
+
+.summary-card--agenda-proximo {
+  --summary-accent: #7f3f32;
+}
+
+.summary-card--cadernos-total {
+  --summary-accent: #6c4b7a;
+}
+
+.summary-card--cadernos-questoes {
+  --summary-accent: #355c6d;
+}
+
+.summary-card--cadernos-ativos {
+  --summary-accent: #1f7a5a;
+}
+
+.summary-card--provas-cadastradas {
+  --summary-accent: #6a4b91;
+}
+
+.summary-card--provas-definidas {
+  --summary-accent: #9a6a1f;
+}
+
+.summary-card--provas-proxima {
+  --summary-accent: #8a4336;
+}
+
+.summary-card--notas-materias {
+  --summary-accent: #325c85;
+}
+
+.summary-card--notas-medias {
+  --summary-accent: #5f6f3b;
+}
+
+.summary-card--notas-aprovadas {
+  --summary-accent: #267154;
+}
+
+.summary-card--notas-provas {
+  --summary-accent: #8a5d1d;
+}
+
+.summary-grid--agenda .summary-card:hover,
+.summary-grid--cadernos .summary-card:hover,
+.summary-grid--provas .summary-card:hover,
+.summary-grid--notas .summary-card:hover {
+  transform: translate3d(0, -4px, 0);
+}
+
 .custom-card {
   background: var(--panel);
   padding: 26px;

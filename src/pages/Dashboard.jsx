@@ -120,10 +120,14 @@ function Dashboard() {
 		() => visibleTasks.filter((task) => task.completed).length,
 		[visibleTasks]
 	)
+	const completedTasksIncludingArchived = useMemo(
+		() => filteredTasks.filter((task) => task.completed).length,
+		[filteredTasks]
+	)
 	const progressPercent = useMemo(() => {
-		if (visibleTasks.length === 0) return 0
-		return Math.round((completedTasks / visibleTasks.length) * 100)
-	}, [visibleTasks.length, completedTasks])
+		if (filteredTasks.length === 0) return 0
+		return Math.round((completedTasksIncludingArchived / filteredTasks.length) * 100)
+	}, [filteredTasks.length, completedTasksIncludingArchived])
 
 	const nextDeadlineTask = useMemo(() => {
 		const pendingWithDeadline = visibleTasks
@@ -322,7 +326,7 @@ function Dashboard() {
 					plans={plans}
 					setSubjects={setSubjects}
 					isLoadingSubjects={false}
-					tasks={tasks}
+					tasks={filteredTasks}
 					activePlanId={planForCreation}
 				/>
 				<TaskList

@@ -706,23 +706,27 @@ function Progress() {
 
   return (
     <section className="dashboard-content">
-      <section className="summary-grid">
+      <section className="summary-grid summary-grid--notas">
         <SummaryCard
+          className="summary-card--notas-materias"
           title="Matérias na tabela"
           value={gradeRows.length}
           description={selectedPlan ? `Filtradas em ${selectedPlan.name}` : 'Todas as matérias cadastradas'}
         />
         <SummaryCard
+          className="summary-card--notas-medias"
           title="Médias lançadas"
           value={subjectsWithAverage}
           description="Matérias com pelo menos uma nota informada"
         />
         <SummaryCard
+          className="summary-card--notas-aprovadas"
           title="Já atingiram a média"
           value={passingRows}
           description="Matérias atualmente acima da nota de corte"
         />
         <SummaryCard
+          className="summary-card--notas-provas"
           title="Provas futuras"
           value={pendingProofCards}
           description="Cards puxados da aba Provas"

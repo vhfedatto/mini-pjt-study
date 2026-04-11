@@ -415,6 +415,15 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
     () => notebooks.filter((n) => !n.archived && n.questions.length > 0).length,
     [notebooks]
   )
+
+  useEffect(() => {
+    setExportSelection((previous) =>
+      previous.filter((notebookId) =>
+        visibleNotebooks.some((notebook) => notebook.id === notebookId)
+      )
+    )
+  }, [visibleNotebooks])
+
   const selectedAttempts = useMemo(() => selected?.attempts ?? [], [selected])
   const reportStats = useMemo(() => {
     if (!selected || selectedAttempts.length === 0) return null
@@ -845,6 +854,8 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   }
 
   function toggleExportSelection(notebookId) {
+    if (!visibleNotebooks.some((notebook) => notebook.id === notebookId)) return
+
     setExportSelection((previous) =>
       previous.includes(notebookId)
         ? previous.filter((id) => id !== notebookId)
@@ -853,7 +864,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
   }
 
   function handleExportNotebooks() {
-    const selectedBooks = notebooks.filter((notebook) => exportSelection.includes(notebook.id))
+    const selectedBooks = visibleNotebooks.filter((notebook) => exportSelection.includes(notebook.id))
     if (selectedBooks.length === 0) {
       setSettingsStatus('Selecione pelo menos um caderno para exportar.')
       return
@@ -1115,10 +1126,10 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
 
   return (
     <>
-      <section className="summary-grid">
-        <SummaryCard title="Cadernos" value={visibleNotebooks.length} description="Coleções ativas para organizar suas questões" />
-        <SummaryCard title="Questões salvas" value={totalQuestions} description="Itens prontos para treino futuro" />
-        <SummaryCard title="Cadernos ativos" value={activeBooks} description="Cadernos que já possuem questões" />
+      <section className="summary-grid summary-grid--cadernos">
+        <SummaryCard className="summary-card--cadernos-total" title="Cadernos" value={visibleNotebooks.length} description="Coleções ativas para organizar suas questões" />
+        <SummaryCard className="summary-card--cadernos-questoes" title="Questões salvas" value={totalQuestions} description="Itens prontos para treino futuro" />
+        <SummaryCard className="summary-card--cadernos-ativos" title="Cadernos ativos" value={activeBooks} description="Cadernos que já possuem questões" />
       </section>
 
       {view === 'library' ? <section className="notebooks-library-layout"><Card><section className="panel-section">
@@ -1247,7 +1258,7 @@ function QuestionNotebooks({ onStartTraining, initialSelectedId }) {
         <div className="notebook-settings-mode-switch"><button type="button" className={`notebook-settings-mode-button${settingsMode === 'export' ? ' is-active' : ''}`} onClick={() => { setSettingsMode('export'); setSettingsStatus('') }}><span className="notebook-inline-icon"><ExportIcon /></span><span>Exportar</span></button><button type="button" className={`notebook-settings-mode-button${settingsMode === 'import' ? ' is-active' : ''}`} onClick={() => { setSettingsMode('import'); setSettingsStatus('') }}><span className="notebook-inline-icon"><ImportIcon /></span><span>Importar</span></button></div>
         {settingsMode === 'export'
           ? settingsContext === 'library'
-            ? <div className="notebook-settings-body"><div className="notebook-settings-hero"><div><h3 className="section-title">Exportar cadernos</h3><p className="flashcards-helper">Monte um arquivo com um ou vários cadernos e leve também os relatórios, se quiser.</p></div><label className="notebook-settings-switch-card"><span><strong>Incluir relatórios</strong><small>Leva tentativas e estatísticas do relatório junto com os cadernos.</small></span><button type="button" role="switch" aria-checked={includeReportsOnExport} className={`notebook-settings-switch${includeReportsOnExport ? ' is-active' : ''}`} onClick={() => setIncludeReportsOnExport((previous) => !previous)}><span /></button></label></div><div><h3 className="section-title">Selecione os cadernos</h3><p className="flashcards-helper">Nenhum caderno começa marcado. Escolha manualmente o que deseja exportar.</p></div><div className="notebook-settings-selection-list">{notebooks.map((notebook) => <label key={notebook.id} className={`notebook-settings-selection-item${exportSelection.includes(notebook.id) ? ' is-selected' : ''}`}><input type="checkbox" checked={exportSelection.includes(notebook.id)} onChange={() => toggleExportSelection(notebook.id)} /><span className="notebook-settings-selection-app">{exportSelection.includes(notebook.id) ? <span className="notebook-settings-selection-badge"><CheckBadgeIcon /></span> : null}<span className={`notebook-settings-selection-app-icon notebook-settings-selection-app-icon--${notebook.color}`} aria-hidden="true">{notebook.name.slice(0, 1).toUpperCase()}</span><span className="notebook-settings-selection-copy"><strong>{notebook.name}</strong><small>{notebook.questions.length} questão(ões){(notebook.attempts?.length ?? 0) > 0 ? ` • ${notebook.attempts.length} relatório(s)` : ''}</small></span></span></label>)}</div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportNotebooks}>Exportar caderno(s)</button></div></div>
+            ? <div className="notebook-settings-body"><div className="notebook-settings-hero"><div><h3 className="section-title">Exportar cadernos</h3><p className="flashcards-helper">Monte um arquivo com um ou vários cadernos e leve também os relatórios, se quiser.</p></div><label className="notebook-settings-switch-card"><span><strong>Incluir relatórios</strong><small>Leva tentativas e estatísticas do relatório junto com os cadernos.</small></span><button type="button" role="switch" aria-checked={includeReportsOnExport} className={`notebook-settings-switch${includeReportsOnExport ? ' is-active' : ''}`} onClick={() => setIncludeReportsOnExport((previous) => !previous)}><span /></button></label></div><div><h3 className="section-title">Selecione os cadernos</h3><p className="flashcards-helper">Nenhum caderno começa marcado. Escolha manualmente o que deseja exportar.</p></div><div className="notebook-settings-selection-list">{visibleNotebooks.map((notebook) => <label key={notebook.id} className={`notebook-settings-selection-item${exportSelection.includes(notebook.id) ? ' is-selected' : ''}`}><input type="checkbox" checked={exportSelection.includes(notebook.id)} onChange={() => toggleExportSelection(notebook.id)} /><span className="notebook-settings-selection-app">{exportSelection.includes(notebook.id) ? <span className="notebook-settings-selection-badge"><CheckBadgeIcon /></span> : null}<span className={`notebook-settings-selection-app-icon notebook-settings-selection-app-icon--${notebook.color}`} aria-hidden="true">{notebook.name.slice(0, 1).toUpperCase()}</span><span className="notebook-settings-selection-copy"><strong>{notebook.name}</strong><small>{notebook.questions.length} questão(ões){(notebook.attempts?.length ?? 0) > 0 ? ` • ${notebook.attempts.length} relatório(s)` : ''}</small></span></span></label>)}</div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportNotebooks}>Exportar caderno(s)</button></div></div>
             : <div className="notebook-settings-body"><div className="notebook-settings-import-card"><div><h3 className="section-title">Exportar questões do caderno</h3><p className="flashcards-helper">Escolha quais questões entram no arquivo. Relatórios e estatísticas não entram no export.</p></div></div><div><h3 className="section-title">Selecione as questões</h3><p className="flashcards-helper">Questões marcadas serão exportadas para o arquivo.</p></div><div className="notebook-question-settings-list">{(selected?.questions ?? []).map((question, index) => <label key={question.id} className={`notebook-question-settings-item${questionExportSelection.includes(question.id) ? ' is-selected' : ''}`}><input type="checkbox" checked={questionExportSelection.includes(question.id)} onChange={() => toggleQuestionExportSelection(question.id)} /><span className="notebook-question-settings-item-index">{index + 1}</span><span className="notebook-question-settings-item-copy"><strong>Questão {index + 1}</strong><small>{question.bank} • {question.year}</small><p>{short(question.statement, 180)}</p></span>{questionExportSelection.includes(question.id) ? <span className="notebook-question-settings-check"><CheckBadgeIcon /></span> : null}</label>)}</div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleExportSelectedNotebookQuestions}>Exportar questões</button></div></div>
           : settingsContext === 'library'
             ? <div className="notebook-settings-body notebook-settings-body-import"><div className="notebook-settings-import-card"><div><h3 className="section-title">Importar arquivo de caderno</h3><p className="flashcards-helper">Escolha um arquivo exportado da estante. Os cadernos serão adicionados automaticamente com questões e relatórios, se existirem.</p></div><div className="settings-actions"><button type="button" className="subject-add-button" onClick={handleOpenNotebookImport}>Selecionar arquivo</button></div></div></div>
