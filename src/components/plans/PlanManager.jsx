@@ -64,7 +64,7 @@ function PlanManager({
   }
 
   return (
-    <Card>
+    <Card className="plan-manager-card">
       {cards.length > 0 ? (
         <div className="plan-card-actions" style={{ marginBottom: '12px' }}>
           <button

@@ -164,6 +164,7 @@ function SubjectList({
               const isDragging = draggedSubjectId === subject.id
               const isDropTarget =
                 dragOverSubjectId === subject.id && draggedSubjectId !== subject.id
+              const isLongSubjectName = subject.name.trim().length > 22
 
               return (
                 <li
@@ -182,7 +183,12 @@ function SubjectList({
                         style={{ '--plan-color': plan?.color || '#c46b2d' }}
                         aria-hidden="true"
                       />
-                      <span className="subject-name">{subject.name}</span>
+                      <span
+                        className={`subject-name${isLongSubjectName ? ' subject-name--long' : ''}`}
+                        title={subject.name}
+                      >
+                        {subject.name}
+                      </span>
                     </div>
                     <p className="task-subject-label">
                       {completedTasksForSubject}/{totalTasksForSubject} tarefas concluídas

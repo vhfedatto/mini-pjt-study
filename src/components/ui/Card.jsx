@@ -1,6 +1,6 @@
-function Card({ children }) {
+function Card({ children, className = '' }) {
     return (
-        <div className="custom-card">
+        <div className={`custom-card${className ? ` ${className}` : ''}`}>
             {children}
         </div>
   )

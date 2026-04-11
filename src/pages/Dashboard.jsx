@@ -201,26 +201,77 @@ function Dashboard() {
 					title="Matérias ativas"
 					value={filteredSubjects.length}
 					description="Total de matérias cadastradas"
+					variant="brand"
+					icon={
+						<svg viewBox="0 0 24 24" fill="none" role="img">
+							<path
+								d="M4.75 6.75A2.75 2.75 0 0 1 7.5 4h9A2.75 2.75 0 0 1 19.25 6.75v10.5A2.75 2.75 0 0 1 16.5 20h-9a2.75 2.75 0 0 1-2.75-2.75V6.75Z"
+								stroke="currentColor"
+								strokeWidth="1.7"
+							/>
+							<path
+								d="M8 8.5h8M8 12h8M8 15.5h4.5"
+								stroke="currentColor"
+								strokeWidth="1.7"
+								strokeLinecap="round"
+							/>
+						</svg>
+					}
 				/>
 
 				<SummaryCard
 					title="Tarefas pendentes"
 					value={pendingTasks}
 					description="Ainda restam tarefas por fazer"
+					variant="warning"
+					icon={
+						<svg viewBox="0 0 24 24" fill="none" role="img">
+							<path
+								d="M7.75 6.75h8.5a2.5 2.5 0 0 1 2.5 2.5v7a2.5 2.5 0 0 1-2.5 2.5h-8.5a2.5 2.5 0 0 1-2.5-2.5v-7a2.5 2.5 0 0 1 2.5-2.5Z"
+								stroke="currentColor"
+								strokeWidth="1.7"
+							/>
+							<path
+								d="M8.5 4.75v3.5M15.5 4.75v3.5M8.75 11.25h6.5"
+								stroke="currentColor"
+								strokeWidth="1.7"
+								strokeLinecap="round"
+							/>
+						</svg>
+					}
 				/>
 
 				<SummaryCard
 					title="Progresso geral"
 					value={`${progressPercent}%`}
 					description="Percentual de tarefas concluídas"
+					variant="success"
+					icon={
+						<svg viewBox="0 0 24 24" fill="none" role="img">
+							<path
+								d="M5 16.25 9.25 12l3 3 6.75-7"
+								stroke="currentColor"
+								strokeWidth="1.9"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+							<path
+								d="M18 8h1.75v1.75"
+								stroke="currentColor"
+								strokeWidth="1.9"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</svg>
+					}
 				/>
 
 				<SummaryCard
-					title="Prazo mais proximo"
+					title="Prazo mais próximo"
 					value={nextDeadlineTask ? nextDeadlineTask.text : 'Sem prazos'}
 					description={
 						nextDeadlineTask
-							? `${nextDeadlineSubject?.name || 'Sem materia'} • vence em ${formatDate(nextDeadlineTask.dueDate)}`
+							? `${nextDeadlineSubject?.name || 'Sem matéria'} • vence em ${formatDate(nextDeadlineTask.dueDate)}`
 							: 'Nenhuma tarefa pendente com prazo definido'
 					}
 					variant="alert"

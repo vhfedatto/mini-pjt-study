@@ -26,18 +26,19 @@ function Footer() {
             />
 
             <div>
+              <span className="footer__eyebrow">Planejamento inteligente</span>
               <h3 className="footer__title">Study Strack</h3>
             </div>
           </div>
-              <p className="footer__subtitle">
-                Organize seus estudos com clareza, ritmo e constancia.
-              </p>
+          <p className="footer__subtitle">
+            Organize seus estudos com clareza, ritmo e constância.
+          </p>
         </section>
 
         <nav className="footer__nav" aria-label="Links institucionais do rodape">
           <p className="footer__heading">Institucional</p>
           <a href="#">Quem somos?</a>
-          <a href="#">Politicas de Privacidade</a>
+          <a href="#">Políticas de Privacidade</a>
           <a href="#">Termos de uso</a>
         </nav>
 
@@ -85,7 +86,7 @@ function Footer() {
 
       <div className="footer__bottom">
         <span>© {year} Study Strack</span>
-        <span>Feito para transformar planejamento em constancia.</span>
+        <span>Feito para transformar planejamento em constância.</span>
       </div>
     </footer>
   )
