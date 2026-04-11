@@ -1249,6 +1249,26 @@ body.modal-scroll-locked .dashboard-content {
   align-self: stretch;
 }
 
+.dashboard-content--notes {
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.custom-card.notes-panel-card,
+.custom-card.notes-table-card {
+  height: auto;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.dashboard-content--notes .footer {
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
 .panel-section {
   display: flex;
   flex-direction: column;
@@ -2195,6 +2215,10 @@ body.modal-scroll-locked .dashboard-content {
 .notes-panel,
 .notes-table-section {
   gap: 18px;
+}
+
+.notes-panel {
+  flex: 0 0 auto;
 }
 
 .notes-toolbar,

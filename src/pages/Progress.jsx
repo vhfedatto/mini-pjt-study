@@ -705,7 +705,7 @@ function Progress() {
   }
 
   return (
-    <section className="dashboard-content">
+    <section className="dashboard-content dashboard-content--notes">
       <section className="summary-grid summary-grid--notas">
         <SummaryCard
           className="summary-card--notas-materias"
@@ -758,7 +758,7 @@ function Progress() {
         />
       </section>
 
-      <Card>
+      <Card className="notes-panel-card">
         <section className="panel-section notes-panel">
           <div className="notes-toolbar">
             <div>
@@ -973,7 +973,7 @@ function Progress() {
         </div>
       ) : null}
 
-      <Card>
+      <Card className="notes-table-card">
         <section className="panel-section notes-table-section">
           <div className="notes-table-header">
             <div>
