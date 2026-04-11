@@ -552,24 +552,48 @@ function Agenda() {
           title="Eventos na agenda"
           value={sortedAgendaItems.length}
           description="Blocos agendados em datas específicas"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M7.75 6.75h8.5a2.5 2.5 0 0 1 2.5 2.5v7a2.5 2.5 0 0 1-2.5 2.5h-8.5a2.5 2.5 0 0 1-2.5-2.5v-7a2.5 2.5 0 0 1 2.5-2.5Z" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M8.5 4.75v3.5M15.5 4.75v3.5M8.5 11.25h7M8.5 14.75h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--agenda-hoje"
           title="Para hoje"
           value={todayItems.length}
           description={`${formatDateLabel(todayKey, { weekday: 'long', day: '2-digit', month: '2-digit' })} com eventos planejados`}
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M12 5.25v6.5l4 2.25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" stroke="currentColor" strokeWidth="1.8" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--agenda-materias"
           title="Matérias na agenda"
           value={subjectsInAgenda}
           description="Disciplinas vinculadas aos eventos"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M5.5 6.5A2.5 2.5 0 0 1 8 4h10.5v14.25A1.75 1.75 0 0 1 16.75 20H8A2.5 2.5 0 0 0 5.5 22V6.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              <path d="M8.5 8.25h7M8.5 11.75h7M8.5 15.25h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--agenda-provas"
           title="Provas pendentes"
           value={pendingImportantDates.length}
           description="Avaliações ainda não concluídas"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M7 4.75h7.75L19.25 9v10.25A2.75 2.75 0 0 1 16.5 22H7.5A2.75 2.75 0 0 1 4.75 19.25v-11.75A2.75 2.75 0 0 1 7.5 4.75Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              <path d="M14.25 5.25v4.5h4.5M8.25 14h7.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--agenda-proximo"
@@ -581,6 +605,12 @@ function Agenda() {
               : 'Adicione eventos para organizar sua rotina'
           }
           variant="alert"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M12 3.75a4.75 4.75 0 0 0-4.75 4.75v2.13c0 .62-.2 1.23-.56 1.74l-1.1 1.57a1.75 1.75 0 0 0 1.43 2.76h9.96a1.75 1.75 0 0 0 1.43-2.76l-1.1-1.57a3 3 0 0 1-.56-1.74V8.5A4.75 4.75 0 0 0 12 3.75Z" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M9.75 18.25a2.25 2.25 0 0 0 4.5 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
       </section>
 

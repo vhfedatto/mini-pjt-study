@@ -954,6 +954,7 @@ body.modal-scroll-locked .dashboard-content {
 .summary-card {
   --summary-accent: var(--accent);
   --summary-surface: color-mix(in srgb, var(--panel) 92%, white 8%);
+  --summary-lift: -4px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -968,9 +969,11 @@ body.modal-scroll-locked .dashboard-content {
   overflow: hidden;
   isolation: isolate;
   will-change: transform;
-  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 220ms ease;
+  transform: translate3d(0, 0, 0);
+  transition: transform 420ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 420ms cubic-bezier(0.19, 1, 0.22, 1),
+    border-color 300ms ease,
+    background 360ms ease;
 }
 
 .summary-card-header {
@@ -994,6 +997,10 @@ body.modal-scroll-locked .dashboard-content {
     transparent 72%
   );
   pointer-events: none;
+  opacity: 0.68;
+  transform: scale(0.92);
+  transition: transform 420ms cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 320ms ease;
 }
 
 .summary-card::after {
@@ -1006,13 +1013,24 @@ body.modal-scroll-locked .dashboard-content {
     transparent 58%
   );
   pointer-events: none;
+  opacity: 0.9;
+  transition: opacity 340ms ease;
 }
 
 .summary-card:hover {
-  transform: translate3d(0, -5px, 0);
+  transform: translate3d(0, var(--summary-lift), 0);
   border-color: color-mix(in srgb, var(--summary-accent) 34%, var(--border));
-  box-shadow: 0 28px 60px color-mix(in srgb, var(--summary-accent) 14%, transparent),
-    0 12px 24px rgba(61, 9, 9, 0.08);
+  box-shadow: 0 24px 52px color-mix(in srgb, var(--summary-accent) 14%, transparent),
+    0 14px 28px rgba(61, 9, 9, 0.08);
+}
+
+.summary-card:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.summary-card:hover::after {
+  opacity: 1;
 }
 
 .summary-card-title {
@@ -1056,11 +1074,24 @@ body.modal-scroll-locked .dashboard-content {
   color: color-mix(in srgb, var(--summary-accent) 78%, var(--text-primary));
   border: 1px solid color-mix(in srgb, var(--summary-accent) 18%, var(--border));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  transform: translate3d(0, 0, 0);
+  transition: transform 360ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 260ms ease,
+    border-color 260ms ease,
+    box-shadow 360ms ease;
 }
 
 .summary-card-icon svg {
   width: 20px;
   height: 20px;
+}
+
+.summary-card:hover .summary-card-icon {
+  transform: translate3d(0, -1px, 0) scale(1.035);
+  background: color-mix(in srgb, var(--summary-accent) 16%, white 84%);
+  border-color: color-mix(in srgb, var(--summary-accent) 26%, var(--border));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 10px 22px color-mix(in srgb, var(--summary-accent) 12%, transparent);
 }
 
 .summary-card--brand {
@@ -1197,7 +1228,7 @@ body.modal-scroll-locked .dashboard-content {
 .summary-grid--cadernos .summary-card:hover,
 .summary-grid--provas .summary-card:hover,
 .summary-grid--notas .summary-card:hover {
-  transform: translate3d(0, -4px, 0);
+  --summary-lift: -3px;
 }
 
 .custom-card {

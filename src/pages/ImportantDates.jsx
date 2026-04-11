@@ -167,12 +167,24 @@ function ImportantDates() {
           title="Datas cadastradas"
           value={importantDates.length}
           description="Provas e marcos importantes registrados"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M7 4.75h7.75L19.25 9v10.25A2.75 2.75 0 0 1 16.5 22H7.5A2.75 2.75 0 0 1 4.75 19.25v-11.75A2.75 2.75 0 0 1 7.5 4.75Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              <path d="M14.25 5.25v4.5h4.5M8.25 13.75h7.5M8.25 17.25h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--provas-definidas"
           title="Com data definida"
           value={upcomingCount}
           description="Eventos com prazo exato"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M7.75 6.75h8.5a2.5 2.5 0 0 1 2.5 2.5v7a2.5 2.5 0 0 1-2.5 2.5h-8.5a2.5 2.5 0 0 1-2.5-2.5v-7a2.5 2.5 0 0 1 2.5-2.5Z" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M8.5 4.75v3.5M15.5 4.75v3.5M8.75 11.25h6.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--provas-proxima"
@@ -184,6 +196,12 @@ function ImportantDates() {
               : 'Cadastre uma avaliação para acompanhar'
           }
           variant="alert"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M12 5.25v6.5l4 2.25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" stroke="currentColor" strokeWidth="1.8" />
+            </svg>
+          }
         />
       </section>
 

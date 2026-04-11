@@ -712,18 +712,36 @@ function Progress() {
           title="Matérias na tabela"
           value={gradeRows.length}
           description={selectedPlan ? `Filtradas em ${selectedPlan.name}` : 'Todas as matérias cadastradas'}
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M5.5 6.5A2.5 2.5 0 0 1 8 4h10.5v14.25A1.75 1.75 0 0 1 16.75 20H8A2.5 2.5 0 0 0 5.5 22V6.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              <path d="M8.5 8.25h7M8.5 11.75h7M8.5 15.25h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--notas-medias"
           title="Médias lançadas"
           value={subjectsWithAverage}
           description="Matérias com pelo menos uma nota informada"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M5.5 17.5 9.5 13.5l3 3 6-7" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M17.5 9.5H19v1.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--notas-aprovadas"
           title="Já atingiram a média"
           value={passingRows}
           description="Matérias atualmente acima da nota de corte"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="m6 12.5 3.5 3.5L18 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" strokeWidth="1.7" />
+            </svg>
+          }
         />
         <SummaryCard
           className="summary-card--notas-provas"
@@ -731,6 +749,12 @@ function Progress() {
           value={pendingProofCards}
           description="Cards puxados da aba Provas"
           variant="alert"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" role="img">
+              <path d="M7 4.75h7.75L19.25 9v10.25A2.75 2.75 0 0 1 16.5 22H7.5A2.75 2.75 0 0 1 4.75 19.25v-11.75A2.75 2.75 0 0 1 7.5 4.75Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              <path d="M14.25 5.25v4.5h4.5M8.5 14h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            </svg>
+          }
         />
       </section>
 
