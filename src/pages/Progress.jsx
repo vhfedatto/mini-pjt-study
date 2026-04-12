@@ -60,6 +60,20 @@ function DragHandleIcon() {
   )
 }
 
+function NotesHeader() {
+  return (
+    <header className="notes-page-header">
+      <div className="notes-page-header-copy">
+        <span className="notes-page-header-eyebrow">Painel acadêmico</span>
+        <h1 className="notes-page-header-title">Notas</h1>
+        <p className="notes-page-header-subtitle">
+          Acompanhe médias, provas futuras e a evolução de cada matéria em um só lugar.
+        </p>
+      </div>
+    </header>
+  )
+}
+
 function readJSON(key, fallback) {
   try {
     const stored = localStorage.getItem(key)
@@ -606,8 +620,10 @@ function Progress() {
         if (!subject || String(subject.planId) !== selectedPlanId) return
 
         const nextScores = { ...(entry.scores || {}) }
+        const nextConfirmedScores = { ...(entry.confirmedScores || {}) }
         delete nextScores[evaluationId]
-        nextEntries[subjectId] = { ...entry, scores: nextScores }
+        delete nextConfirmedScores[evaluationId]
+        nextEntries[subjectId] = { ...entry, scores: nextScores, confirmedScores: nextConfirmedScores }
       })
 
       return {
@@ -694,6 +710,23 @@ function Progress() {
     }))
   }
 
+  const toggleScoreConfirmed = (subjectId, evaluationId) => {
+    updateEntry(subjectId, (entry) => {
+      const currentValue = entry.scores?.[evaluationId] ?? ''
+      if (!String(currentValue).trim()) return entry
+
+      const confirmedScores = {
+        ...(entry.confirmedScores || {}),
+        [evaluationId]: !entry.confirmedScores?.[evaluationId]
+      }
+
+      return {
+        ...entry,
+        confirmedScores
+      }
+    })
+  }
+
   const handleGradingStyleChange = (value) => {
     setGradebook((prev) => ({
       ...prev,
@@ -706,6 +739,8 @@ function Progress() {
 
   return (
     <section className="dashboard-content dashboard-content--notes">
+      <NotesHeader />
+
       <section className="summary-grid summary-grid--notas">
         <SummaryCard
           className="summary-card--notas-materias"
@@ -1037,6 +1072,9 @@ function Progress() {
                           const scoreValue = evaluationForSubject
                             ? row.subjectEntry.scores?.[evaluationForSubject.id] ?? ''
                             : ''
+                          const isScoreConfirmed = evaluationForSubject
+                            ? Boolean(row.subjectEntry.confirmedScores?.[evaluationForSubject.id])
+                            : false
                           const proofCards = proofCardsBySubject[String(row.subject.id)]?.[
                             normalizeLabel(evaluation.label)
                           ] || []
@@ -1044,16 +1082,28 @@ function Progress() {
                           return (
                             <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
                               {evaluationForSubject ? (
-                                <input
-                                  className="subject-input notes-score-input"
-                                  type="text"
-                                  inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
-                                  placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
-                                  value={scoreValue}
-                                  onChange={(event) =>
-                                    handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
-                                  }
-                                />
+                                <>
+                                  <input
+                                    className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                    type="text"
+                                    inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                                    placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
+                                    value={scoreValue}
+                                    disabled={isScoreConfirmed}
+                                    onChange={(event) =>
+                                      handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
+                                    }
+                                  />
+                                  {String(scoreValue).trim() ? (
+                                    <button
+                                      type="button"
+                                      className={`notes-score-confirm-button${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                      onClick={() => toggleScoreConfirmed(row.subject.id, evaluationForSubject.id)}
+                                    >
+                                      {isScoreConfirmed ? 'Alterar' : 'Confirmado'}
+                                    </button>
+                                  ) : null}
+                                </>
                               ) : (
                                 <div className="notes-empty-score">Não usada neste plano</div>
                               )}
@@ -1151,6 +1201,7 @@ function Progress() {
 
                                 {planEvaluations.map((evaluation) => {
                                   const scoreValue = row.subjectEntry.scores?.[evaluation.id] ?? ''
+                                  const isScoreConfirmed = Boolean(row.subjectEntry.confirmedScores?.[evaluation.id])
                                   const proofCards = proofCardsBySubject[String(row.subject.id)]?.[
                                     normalizeLabel(evaluation.label)
                                   ] || []
@@ -1158,15 +1209,25 @@ function Progress() {
                                   return (
                                     <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
                                       <input
-                                        className="subject-input notes-score-input"
+                                        className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
                                         type="text"
                                         inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
                                         placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
                                         value={scoreValue}
+                                        disabled={isScoreConfirmed}
                                         onChange={(event) =>
                                           handleScoreChange(row.subject.id, evaluation.id, event.target.value)
                                         }
                                       />
+                                      {String(scoreValue).trim() ? (
+                                        <button
+                                          type="button"
+                                          className={`notes-score-confirm-button${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                          onClick={() => toggleScoreConfirmed(row.subject.id, evaluation.id)}
+                                        >
+                                          {isScoreConfirmed ? 'Alterar' : 'Confirmado'}
+                                        </button>
+                                      ) : null}
 
                                       {proofCards.length > 0 ? (
                                         <div className="notes-proof-list">
