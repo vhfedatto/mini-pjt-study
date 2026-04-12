@@ -3,6 +3,7 @@ import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Progress from './pages/Progress'
 import ImportantDates from './pages/ImportantDates'
+import StudyProgress from './pages/StudyProgress'
 import Treinos from './pages/Treinos'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
@@ -135,11 +136,12 @@ function App() {
         <QuestionTraining notebookId={questionTrainingNotebookId} onExit={handleExitQuestionTraining} />
       )}
       {activePage === 'progress' && <Progress />}
+      {activePage === 'study-progress' && <StudyProgress />}
       {activePage === 'ranking' && <Ranking />}
       {activePage === 'important-dates' && <ImportantDates />}
       {activePage === 'profile' && <Profile />}
       {activePage === 'settings' && <Settings onLogout={handleLogout} />}
-      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && (
+      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'study-progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && (
         <section className="dashboard-content" style={{ padding: '24px' }}>
           <h2>Selecione uma opção no menu lateral</h2>
         </section>

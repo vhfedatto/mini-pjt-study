@@ -108,6 +108,37 @@ function NotesIcon() {
   )
 }
 
+function ProgressIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M5.5 18.25h13"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7.25 16V12.5M12 16V8.25M16.75 16v-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m7.25 9.75 4.2-3.25 2.65 1.9 2.66-3.15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function RankingIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -127,6 +158,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
     { key: 'flashcards', label: 'Cadernos', icon: <NotebookIcon /> },
     { key: 'important-dates', label: 'Provas', icon: <ExamIcon /> },
     { key: 'progress', label: 'Notas', icon: <NotesIcon /> },
+    { key: 'study-progress', label: 'Progresso', icon: <ProgressIcon /> },
     { key: 'ranking', label: 'Ranking', icon: <RankingIcon /> },
   ]
 
