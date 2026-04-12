@@ -74,6 +74,21 @@ function NotesHeader() {
   )
 }
 
+function ChevronDownIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="m6 9 6 6 6-6"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  )
+}
+
 function readJSON(key, fallback) {
   try {
     const stored = localStorage.getItem(key)
@@ -274,6 +289,8 @@ function Progress() {
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [newEvaluationName, setNewEvaluationName] = useState('')
   const [isConfigOpen, setIsConfigOpen] = useState(false)
+  const [isHiddenPlansOpen, setIsHiddenPlansOpen] = useState(false)
+  const [expandedHiddenPlanId, setExpandedHiddenPlanId] = useState('')
   const [draggedSubject, setDraggedSubject] = useState(null)
   const [dragTargetSubjectId, setDragTargetSubjectId] = useState('')
 
@@ -495,6 +512,42 @@ function Progress() {
     }, {})
   }, [gradeRows])
 
+  const hiddenPlans = useMemo(() => {
+    return plans
+      .map((plan) => {
+        const planKey = String(plan.id)
+        const planSubjects = subjects.filter((subject) => String(subject.planId) === planKey)
+        const planConfig =
+          allPlanConfigs[planKey] || createPlanGradeConfig(planSubjects.map((subject) => String(subject.id)))
+        const selectedPlanSubjects = planSubjects.filter((subject) =>
+          planConfig.selectedSubjectIds.includes(String(subject.id))
+        )
+
+        return {
+          plan,
+          planSubjects,
+          selectedPlanSubjects
+        }
+      })
+      .filter(({ planSubjects, selectedPlanSubjects }) => planSubjects.length > 0 && selectedPlanSubjects.length === 0)
+  }, [allPlanConfigs, plans, subjects])
+
+  useEffect(() => {
+    if (!isHiddenPlansOpen) return
+
+    if (hiddenPlans.length === 0) {
+      handleCloseHiddenPlans()
+      return
+    }
+
+    if (
+      expandedHiddenPlanId &&
+      !hiddenPlans.some(({ plan }) => String(plan.id) === expandedHiddenPlanId)
+    ) {
+      setExpandedHiddenPlanId(String(hiddenPlans[0].plan.id))
+    }
+  }, [expandedHiddenPlanId, hiddenPlans, isHiddenPlansOpen])
+
   const subjectsWithAverage = gradeRows.filter((row) => row.average !== null).length
   const passingRows = gradeRows.filter(
     (row) =>
@@ -510,6 +563,34 @@ function Progress() {
     setSelectedPlanId((currentPlanId) => (currentPlanId === planId ? '' : planId))
     setNewEvaluationName('')
     setIsConfigOpen(false)
+  }
+
+  const handleOpenHiddenPlans = () => {
+    setExpandedHiddenPlanId(hiddenPlans[0]?.plan?.id ? String(hiddenPlans[0].plan.id) : '')
+    setIsHiddenPlansOpen(true)
+  }
+
+  const handleCloseHiddenPlans = () => {
+    setIsHiddenPlansOpen(false)
+    setExpandedHiddenPlanId('')
+  }
+
+  const handleHiddenPlanSubjectToggle = (planId, subjectId) => {
+    const planKey = String(planId)
+    const subjectKey = String(subjectId)
+
+    updatePlanConfig(planKey, (config) => {
+      const isSelected = config.selectedSubjectIds.includes(subjectKey)
+      return {
+        ...config,
+        selectedSubjectIds: isSelected
+          ? config.selectedSubjectIds.filter((id) => id !== subjectKey)
+          : [...config.selectedSubjectIds, subjectKey],
+        subjectOrder: config.subjectOrder?.includes(subjectKey)
+          ? config.subjectOrder
+          : [...(config.subjectOrder || []), subjectKey]
+      }
+    })
   }
 
   const updatePlanConfig = (planKey, updater) => {
@@ -806,6 +887,15 @@ function Progress() {
             <div className="notes-toolbar-controls">
               <button
                 type="button"
+                className="notes-hidden-plans-trigger"
+                onClick={handleOpenHiddenPlans}
+                disabled={hiddenPlans.length === 0}
+              >
+                <span>Planos ocultos</span>
+                <span className="notes-hidden-plans-count">{hiddenPlans.length}</span>
+              </button>
+              <button
+                type="button"
                 className="notes-settings-trigger"
                 onClick={() => setIsConfigOpen(true)}
                 aria-label={selectedPlan ? `Abrir configurações de ${selectedPlan.name}` : 'Abrir configurações da tabela'}
@@ -1008,6 +1098,94 @@ function Progress() {
         </div>
       ) : null}
 
+      {isHiddenPlansOpen ? (
+        <div
+          className="plan-modal-overlay"
+          role="presentation"
+          onClick={handleCloseHiddenPlans}
+        >
+          <div
+            className="plan-modal notes-hidden-plans-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="notes-hidden-plans-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="notes-config-modal-header">
+              <div>
+                <h2 id="notes-hidden-plans-title" className="plan-modal-title">Planos ocultos da tabela</h2>
+                <p className="settings-helper">
+                  Esses planos não aparecem na tela principal porque nenhuma matéria está selecionada para a tabela.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={handleCloseHiddenPlans}
+                aria-label="Fechar planos ocultos"
+              >
+                ×
+              </button>
+            </div>
+
+            {hiddenPlans.length > 0 ? (
+              <div className="notes-hidden-plans-list">
+                {hiddenPlans.map(({ plan, planSubjects }) => {
+                  const planKey = String(plan.id)
+                  const isExpanded = expandedHiddenPlanId === planKey
+
+                  return (
+                    <article key={plan.id} className="notes-hidden-plan-card">
+                      <div className="notes-hidden-plan-header">
+                        <div className="notes-plan-card-title">
+                          <span
+                            className="plan-color-dot"
+                            style={{ '--plan-color': plan.color || defaultPlanColor }}
+                            aria-hidden="true"
+                          />
+                          <div className="notes-hidden-plan-copy">
+                            <h3>{plan.name}</h3>
+                            <p>{planSubjects.length} matéria{planSubjects.length !== 1 ? 's' : ''} disponível{planSubjects.length !== 1 ? 'eis' : ''}</p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={`notes-hidden-plan-toggle${isExpanded ? ' is-open' : ''}`}
+                          onClick={() => setExpandedHiddenPlanId((current) => (current === planKey ? '' : planKey))}
+                        >
+                          <span>Editar matérias</span>
+                          <span className="notes-hidden-plan-toggle-icon" aria-hidden="true">
+                            <ChevronDownIcon />
+                          </span>
+                        </button>
+                      </div>
+
+                      {isExpanded ? (
+                        <div className="notes-hidden-plan-subjects">
+                          {planSubjects.map((subject) => (
+                            <label key={subject.id} className="notes-subject-option">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(allPlanConfigs[planKey]?.selectedSubjectIds?.includes(String(subject.id)))}
+                                onChange={() => handleHiddenPlanSubjectToggle(plan.id, subject.id)}
+                              />
+                              <span>{subject.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : null}
+                    </article>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="empty-message">Todos os planos com matérias já estão visíveis na tabela.</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       <Card className="notes-table-card">
         <section className="panel-section notes-table-section">
           <div className="notes-table-header">
@@ -1083,26 +1261,28 @@ function Progress() {
                             <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
                               {evaluationForSubject ? (
                                 <>
-                                  <input
-                                    className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
-                                    type="text"
-                                    inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
-                                    placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
-                                    value={scoreValue}
-                                    disabled={isScoreConfirmed}
-                                    onChange={(event) =>
-                                      handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
-                                    }
-                                  />
-                                  {String(scoreValue).trim() ? (
-                                    <button
-                                      type="button"
-                                      className={`notes-score-confirm-button${isScoreConfirmed ? ' is-confirmed' : ''}`}
-                                      onClick={() => toggleScoreConfirmed(row.subject.id, evaluationForSubject.id)}
-                                    >
-                                      {isScoreConfirmed ? 'Alterar' : 'Confirmado'}
-                                    </button>
-                                  ) : null}
+                                  <div className="notes-score-input-wrap">
+                                    <input
+                                      className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                      type="text"
+                                      inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                                      placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
+                                      value={scoreValue}
+                                      disabled={isScoreConfirmed}
+                                      onChange={(event) =>
+                                        handleScoreChange(row.subject.id, evaluationForSubject.id, event.target.value)
+                                      }
+                                    />
+                                    {String(scoreValue).trim() ? (
+                                      <button
+                                        type="button"
+                                        className={`notes-score-confirm-button${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                        onClick={() => toggleScoreConfirmed(row.subject.id, evaluationForSubject.id)}
+                                      >
+                                        {isScoreConfirmed ? 'Alterar' : 'Confirmado'}
+                                      </button>
+                                    ) : null}
+                                  </div>
                                 </>
                               ) : (
                                 <div className="notes-empty-score">Não usada neste plano</div>
@@ -1208,26 +1388,28 @@ function Progress() {
 
                                   return (
                                     <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
-                                      <input
-                                        className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
-                                        type="text"
-                                        inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
-                                        placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
-                                        value={scoreValue}
-                                        disabled={isScoreConfirmed}
-                                        onChange={(event) =>
-                                          handleScoreChange(row.subject.id, evaluation.id, event.target.value)
-                                        }
-                                      />
-                                      {String(scoreValue).trim() ? (
-                                        <button
-                                          type="button"
-                                          className={`notes-score-confirm-button${isScoreConfirmed ? ' is-confirmed' : ''}`}
-                                          onClick={() => toggleScoreConfirmed(row.subject.id, evaluation.id)}
-                                        >
-                                          {isScoreConfirmed ? 'Alterar' : 'Confirmado'}
-                                        </button>
-                                      ) : null}
+                                      <div className="notes-score-input-wrap">
+                                        <input
+                                          className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                          type="text"
+                                          inputMode={gradingStyle === 'letter' ? 'text' : 'decimal'}
+                                          placeholder={gradingStyle === 'letter' ? 'A-F' : '0,0'}
+                                          value={scoreValue}
+                                          disabled={isScoreConfirmed}
+                                          onChange={(event) =>
+                                            handleScoreChange(row.subject.id, evaluation.id, event.target.value)
+                                          }
+                                        />
+                                        {String(scoreValue).trim() ? (
+                                          <button
+                                            type="button"
+                                            className={`notes-score-confirm-button${isScoreConfirmed ? ' is-confirmed' : ''}`}
+                                            onClick={() => toggleScoreConfirmed(row.subject.id, evaluation.id)}
+                                          >
+                                            {isScoreConfirmed ? 'Alterar' : 'Confirmado'}
+                                          </button>
+                                        ) : null}
+                                      </div>
 
                                       {proofCards.length > 0 ? (
                                         <div className="notes-proof-list">
