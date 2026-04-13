@@ -81,6 +81,29 @@ function CalendarIcon() {
   )
 }
 
+function CoursesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M5.75 5.5a1.75 1.75 0 0 1 1.75-1.75h8.75A2.75 2.75 0 0 1 19 6.5v12.25a.75.75 0 0 1-1.17.62l-2.33-1.55a.75.75 0 0 0-.83 0l-2.33 1.55a.75.75 0 0 1-.83 0l-2.33-1.55a.75.75 0 0 0-.83 0L6.17 19.4A.75.75 0 0 1 5 18.78Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 7.5h5.5M9 10.5h3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function NotebookIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -155,6 +178,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
     { key: 'agenda', label: 'Agenda', icon: <CalendarIcon /> },
+    { key: 'courses', label: 'Matérias', icon: <CoursesIcon /> },
     { key: 'flashcards', label: 'Cadernos', icon: <NotebookIcon /> },
     { key: 'important-dates', label: 'Provas', icon: <ExamIcon /> },
     { key: 'progress', label: 'Notas', icon: <NotesIcon /> },

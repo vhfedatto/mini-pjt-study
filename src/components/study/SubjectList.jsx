@@ -183,11 +183,18 @@ function SubjectList({
     reorderedPlanSubjects.splice(targetIndex, 0, movedSubject)
 
     setSubjects((prev) => {
-      const nextPlanSubjects = [...reorderedPlanSubjects]
+      const visibleSubjectIds = new Set(orderedPlanSubjects.map((subject) => subject.id))
+      const nextVisibleSubjects = [...reorderedPlanSubjects]
+      const planSubjects = prev.filter((subject) => subject.planId === activePlanId)
+      const mergedPlanSubjects = planSubjects.map((subject) => {
+        if (!visibleSubjectIds.has(subject.id)) return subject
+        return nextVisibleSubjects.shift() ?? subject
+      })
+      const nextPlanSubjects = [...mergedPlanSubjects]
 
-      return prev.map((subject) =>
-        subject.planId === activePlanId ? nextPlanSubjects.shift() : subject
-      )
+      return prev.map((subject) => (
+        subject.planId === activePlanId ? nextPlanSubjects.shift() ?? subject : subject
+      ))
     })
 
     handleDragEnd()
@@ -255,13 +262,6 @@ function SubjectList({
           >
             {visibleSubjects.map((subject) => {
               const plan = plans.find((item) => item.id === subject.planId)
-              const totalTasksForSubject = tasks.filter(
-                (task) => task.subjectId === subject.id
-              ).length
-
-              const completedTasksForSubject = tasks.filter(
-                (task) => task.subjectId === subject.id && task.completed
-              ).length
               const isDragging = draggedSubjectId === subject.id
               const isDropTarget =
                 dragOverSubjectId === subject.id && draggedSubjectId !== subject.id
@@ -302,9 +302,6 @@ function SubjectList({
                         <span className="subject-period-badge">
                           {subject.period || 'Período não definido'}
                         </span>
-                        <p className="task-subject-label">
-                          {completedTasksForSubject}/{totalTasksForSubject} tarefas concluídas
-                        </p>
                       </div>
                     </div>
 

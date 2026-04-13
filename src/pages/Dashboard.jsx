@@ -7,6 +7,7 @@ import TodaySubjectRecommendation from '../components/study/TodaySubjectRecommen
 import Footer from '../components/layout/Footer'
 import PlanManager from '../components/plans/PlanManager'
 import { taskReducer } from '../reducers/taskReducer'
+import { getCurrentAcademicPeriod } from '../utils/academicPeriod'
 
 function Dashboard() {
 	const defaultPlanColor = '#c46b2d'
@@ -42,7 +43,7 @@ function Dashboard() {
 		return stored ? JSON.parse(stored) : []
 	})
 
-	const [tasks, dispatch] = useReducer(taskReducer, [], () => {
+ const [tasks, dispatch] = useReducer(taskReducer, [], () => {
 		const stored = localStorage.getItem('tasks')
 		return stored ? JSON.parse(stored) : []
 	})
@@ -55,6 +56,15 @@ function Dashboard() {
 	const [selectedPlanId, setSelectedPlanId] = useState(null)
 	const [isRecommendationVisible, setIsRecommendationVisible] = useState(false)
 	const planForCreation = selectedPlanId ?? plans[0]?.id ?? null
+	const currentAcademicPeriod = useMemo(() => getCurrentAcademicPeriod(), [])
+
+	const subjectsById = useMemo(() => {
+		const map = new Map()
+		subjects.forEach((subject) => {
+			map.set(subject.id, subject)
+		})
+		return map
+	}, [subjects])
 
 	useEffect(() => {
 		const defaultPlanId = plans[0]?.id
@@ -87,21 +97,28 @@ function Dashboard() {
 		}
 	}, [defaultPlanColor, plans, subjects, tasks])
 
-	const filteredSubjects = useMemo(
-		() =>
-			selectedPlanId
-				? subjects.filter((subject) => subject.planId === selectedPlanId)
-				: subjects,
-		[subjects, selectedPlanId]
-	)
+	const filteredSubjects = useMemo(() => {
+		const periodSubjects = subjects.filter(
+			(subject) =>
+				!subject.period || subject.period === currentAcademicPeriod
+		)
 
-	const filteredTasks = useMemo(
-		() =>
-			selectedPlanId
-				? tasks.filter((task) => task.planId === selectedPlanId)
-				: tasks,
-		[tasks, selectedPlanId]
-	)
+		if (!selectedPlanId) return periodSubjects
+
+		return periodSubjects.filter((subject) => subject.planId === selectedPlanId)
+	}, [currentAcademicPeriod, selectedPlanId, subjects])
+
+	const filteredTasks = useMemo(() => {
+		const tasksByPlan = selectedPlanId
+			? tasks.filter((task) => task.planId === selectedPlanId)
+			: tasks
+
+		return tasksByPlan.filter((task) => {
+			const subject = subjectsById.get(task.subjectId)
+			if (!subject) return false
+			return !subject.period || subject.period === currentAcademicPeriod
+		})
+	}, [currentAcademicPeriod, selectedPlanId, subjectsById, tasks])
 
 	const visibleTasks = useMemo(
 		() => filteredTasks.filter((task) => !task.archived),

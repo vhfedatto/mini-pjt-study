@@ -8,6 +8,7 @@ import Treinos from './pages/Treinos'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 import Ranking from './pages/Ranking'
+import Courses from './pages/Courses'
 import Login from './pages/Login'
 import Sidebar from './components/layout/Sidebar'
 import QuestionTraining from './pages/QuestionTraining'
@@ -138,10 +139,11 @@ function App() {
       {activePage === 'progress' && <Progress />}
       {activePage === 'study-progress' && <StudyProgress />}
       {activePage === 'ranking' && <Ranking />}
+      {activePage === 'courses' && <Courses />}
       {activePage === 'important-dates' && <ImportantDates />}
       {activePage === 'profile' && <Profile />}
       {activePage === 'settings' && <Settings onLogout={handleLogout} />}
-      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'study-progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && (
+      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'study-progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && activePage !== 'courses' && (
         <section className="dashboard-content" style={{ padding: '24px' }}>
           <h2>Selecione uma opção no menu lateral</h2>
         </section>

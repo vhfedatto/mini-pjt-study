@@ -1,14 +1,6 @@
 import { useMemo, useState } from 'react'
 import Card from '../ui/Card'
-
-function getCurrentAcademicPeriod() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = today.getMonth()
-  const period = month < 6 ? 1 : 2
-
-  return `${year}.${period}`
-}
+import { getCurrentAcademicPeriod } from '../../utils/academicPeriod'
 
 function PlanManager({
   plans,
