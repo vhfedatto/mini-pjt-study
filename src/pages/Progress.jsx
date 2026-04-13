@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SummaryCard from '../components/ui/SummaryCard'
 import Footer from '../components/layout/Footer'
 import Card from '../components/ui/Card'
+import { getCurrentAcademicPeriod } from '../utils/academicPeriod'
 
 const defaultPlanColor = '#c46b2d'
 const GRADES_STORAGE_KEY = 'studyGrades'
@@ -191,6 +192,17 @@ function formatMissingDisplay(missingToPass, passingScoreValue, gradingStyle) {
   return formatScore(missingToPass)
 }
 
+function isSubjectInAcademicPeriod(subject, period, currentAcademicPeriod) {
+  if (!subject) return false
+  if (!subject.period) return period === currentAcademicPeriod
+  return subject.period === period
+}
+
+function isPastAcademicPeriod(period, currentAcademicPeriod) {
+  if (!period) return false
+  return period.localeCompare(currentAcademicPeriod) < 0
+}
+
 function createPlanGradeConfig(subjectIds = []) {
   return {
     passingScore: DEFAULT_PASSING_SCORE,
@@ -286,6 +298,7 @@ function readGradebook(subjects) {
 }
 
 function Progress() {
+  const currentAcademicPeriod = getCurrentAcademicPeriod()
   const [plans, setPlans] = useState(() =>
     readJSON('plans', readJSON('studyPlans', []))
   )
@@ -293,6 +306,7 @@ function Progress() {
   const [importantDates, setImportantDates] = useState(() => readJSON('importantDates', []))
   const [gradebook, setGradebook] = useState(() => readGradebook(readJSON('subjects', [])))
   const [selectedPlanId, setSelectedPlanId] = useState('')
+  const [selectedPeriod, setSelectedPeriod] = useState(currentAcademicPeriod)
   const [newEvaluationName, setNewEvaluationName] = useState('')
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [isHiddenPlansOpen, setIsHiddenPlansOpen] = useState(false)
@@ -336,14 +350,21 @@ function Progress() {
     localStorage.setItem(GRADES_BACKUP_STORAGE_KEY, JSON.stringify(normalized))
   }, [gradebook, subjects])
 
-  useEffect(() => {
-    if (!selectedPlanId) return
+  const availablePeriods = useMemo(() => {
+    const periods = new Set(
+      subjects
+        .map((subject) => subject.period)
+        .filter(Boolean)
+    )
+    periods.add(currentAcademicPeriod)
+    return Array.from(periods).sort((left, right) => right.localeCompare(left))
+  }, [currentAcademicPeriod, subjects])
 
-    const hasPlan = plans.some((plan) => String(plan.id) === selectedPlanId)
-    if (!hasPlan) {
-      setSelectedPlanId('')
+  useEffect(() => {
+    if (!availablePeriods.includes(selectedPeriod)) {
+      setSelectedPeriod(currentAcademicPeriod)
     }
-  }, [plans, selectedPlanId])
+  }, [availablePeriods, currentAcademicPeriod, selectedPeriod])
 
   const gradingStyle = gradebook.settings?.gradingStyle || DEFAULT_GRADING_STYLE
   const selectedPlan = useMemo(
@@ -351,10 +372,29 @@ function Progress() {
     [plans, selectedPlanId]
   )
 
+  const periodSubjects = useMemo(
+    () => subjects.filter((subject) => isSubjectInAcademicPeriod(subject, selectedPeriod, currentAcademicPeriod)),
+    [currentAcademicPeriod, selectedPeriod, subjects]
+  )
+
+  const visiblePlans = useMemo(
+    () => plans.filter((plan) => periodSubjects.some((subject) => String(subject.planId) === String(plan.id))),
+    [periodSubjects, plans]
+  )
+
   const activePlanSubjects = useMemo(() => {
     if (!selectedPlanId) return []
-    return subjects.filter((subject) => String(subject.planId) === selectedPlanId)
-  }, [selectedPlanId, subjects])
+    return periodSubjects.filter((subject) => String(subject.planId) === selectedPlanId)
+  }, [periodSubjects, selectedPlanId])
+
+  useEffect(() => {
+    if (!selectedPlanId) return
+
+    const hasPlan = visiblePlans.some((plan) => String(plan.id) === selectedPlanId)
+    if (!hasPlan) {
+      setSelectedPlanId('')
+    }
+  }, [selectedPlanId, visiblePlans])
 
   const activePlanConfig = useMemo(() => {
     if (!selectedPlanId) return null
@@ -410,8 +450,10 @@ function Progress() {
 
     const merged = []
     const seen = new Set()
+    const visiblePlanIds = new Set(periodSubjects.map((subject) => String(subject.planId)))
 
-    Object.values(allPlanConfigs).forEach((config) => {
+    Object.entries(allPlanConfigs).forEach(([planKey, config]) => {
+      if (!visiblePlanIds.has(String(planKey))) return
       config.evaluations.forEach((evaluation) => {
         const key = normalizeLabel(evaluation.label)
         if (!key || seen.has(key)) return
@@ -425,7 +467,7 @@ function Progress() {
     }
 
     return merged
-  }, [activePlanConfig, allPlanConfigs, selectedPlanId])
+  }, [activePlanConfig, allPlanConfigs, periodSubjects, selectedPlanId])
 
   const visibleSubjects = useMemo(() => {
     const getSubjectOrderIndex = (subject) => {
@@ -440,7 +482,7 @@ function Progress() {
         .sort((a, b) => getSubjectOrderIndex(a) - getSubjectOrderIndex(b) || a.name.localeCompare(b.name))
     }
 
-    return subjects
+    return periodSubjects
       .filter((subject) => {
         const planKey = String(subject.planId)
         const planConfig = allPlanConfigs[planKey] || createPlanGradeConfig([String(subject.id)])
@@ -451,7 +493,7 @@ function Progress() {
         const planB = plans.find((plan) => String(plan.id) === String(b.planId))?.name || ''
         return planA.localeCompare(planB) || getSubjectOrderIndex(a) - getSubjectOrderIndex(b) || a.name.localeCompare(b.name)
       })
-  }, [activePlanConfig?.selectedSubjectIds, activePlanSubjects, allPlanConfigs, plans, selectedPlanId, subjects])
+  }, [activePlanConfig?.selectedSubjectIds, activePlanSubjects, allPlanConfigs, periodSubjects, plans, selectedPlanId])
 
   const proofCardsBySubject = useMemo(() => {
     const map = {}
@@ -514,6 +556,44 @@ function Progress() {
     })
   }, [allPlanConfigs, gradebook.entries, plans, visibleSubjects])
 
+  const selectedPlanCourseSummary = useMemo(() => {
+    if (!selectedPlanId) return null
+
+    const planKey = String(selectedPlanId)
+    const planSubjects = subjects.filter((subject) => String(subject.planId) === planKey)
+    const planConfig = allPlanConfigs[planKey] || createPlanGradeConfig(planSubjects.map((subject) => String(subject.id)))
+    const planEvaluations = planConfig.evaluations || DEFAULT_EVALUATIONS
+
+    const completedPastSubjects = planSubjects.filter((subject) => {
+      if (!isPastAcademicPeriod(subject.period, currentAcademicPeriod)) return false
+
+      const subjectEntry = gradebook.entries[String(subject.id)] || { scores: {} }
+      return planEvaluations.every((evaluation) => (
+        parseGradeValue(subjectEntry.scores?.[evaluation.id], gradingStyle) !== null
+      ))
+    })
+
+    const subjectAverages = completedPastSubjects
+      .map((subject) => {
+        const subjectEntry = gradebook.entries[String(subject.id)] || { scores: {} }
+        const parsedScores = planEvaluations.map((evaluation) => (
+          parseGradeValue(subjectEntry.scores?.[evaluation.id], gradingStyle)
+        ))
+        const totalScore = parsedScores.reduce((sum, value) => sum + (value ?? 0), 0)
+        return planEvaluations.length > 0 ? totalScore / planEvaluations.length : null
+      })
+      .filter((value) => value !== null)
+
+    const courseAverage = subjectAverages.length > 0
+      ? subjectAverages.reduce((sum, value) => sum + value, 0) / subjectAverages.length
+      : null
+
+    return {
+      completedSubjectsCount: completedPastSubjects.length,
+      courseAverage
+    }
+  }, [allPlanConfigs, currentAcademicPeriod, gradebook.entries, gradingStyle, selectedPlanId, subjects])
+
   const gradeRowsByPlan = useMemo(() => {
     return gradeRows.reduce((accumulator, row) => {
       const planKey = String(row.subject.planId)
@@ -524,10 +604,10 @@ function Progress() {
   }, [gradeRows])
 
   const hiddenPlans = useMemo(() => {
-    return plans
+    return visiblePlans
       .map((plan) => {
         const planKey = String(plan.id)
-        const planSubjects = subjects.filter((subject) => String(subject.planId) === planKey)
+        const planSubjects = periodSubjects.filter((subject) => String(subject.planId) === planKey)
         const planConfig =
           allPlanConfigs[planKey] || createPlanGradeConfig(planSubjects.map((subject) => String(subject.id)))
         const selectedPlanSubjects = planSubjects.filter((subject) =>
@@ -541,7 +621,7 @@ function Progress() {
         }
       })
       .filter(({ planSubjects, selectedPlanSubjects }) => planSubjects.length > 0 && selectedPlanSubjects.length === 0)
-  }, [allPlanConfigs, plans, subjects])
+  }, [allPlanConfigs, periodSubjects, visiblePlans])
 
   useEffect(() => {
     if (!isHiddenPlansOpen) return
@@ -838,7 +918,7 @@ function Progress() {
           className="summary-card--notas-materias"
           title="Matérias na tabela"
           value={gradeRows.length}
-          description={selectedPlan ? `Filtradas em ${selectedPlan.name}` : 'Todas as matérias cadastradas'}
+          description={selectedPlan ? `${selectedPlan.name} • período ${selectedPeriod}` : `Período ${selectedPeriod}`}
           icon={
             <svg viewBox="0 0 24 24" fill="none" role="img">
               <path d="M5.5 6.5A2.5 2.5 0 0 1 8 4h10.5v14.25A1.75 1.75 0 0 1 16.75 20H8A2.5 2.5 0 0 0 5.5 22V6.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
@@ -891,11 +971,23 @@ function Progress() {
             <div>
               <h2 className="section-title">Notas por matéria</h2>
               <p className="settings-helper">
-                Selecione um plano pelos cards abaixo. A edição da tabela fica concentrada no botão de configurações.
+                Escolha o período para editar as notas e, se quiser, filtre por um plano específico.
               </p>
             </div>
 
             <div className="notes-toolbar-controls">
+              <select
+                className="subject-input notes-period-select"
+                value={selectedPeriod}
+                onChange={(event) => setSelectedPeriod(event.target.value)}
+                aria-label="Selecionar período das notas"
+              >
+                {availablePeriods.map((period) => (
+                  <option key={period} value={period}>
+                    Período {period}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 className="notes-hidden-plans-trigger"
@@ -918,8 +1010,8 @@ function Progress() {
           </div>
 
           <div className="notes-plan-cards">
-            {plans.map((plan) => {
-              const subjectCount = subjects.filter((subject) => String(subject.planId) === String(plan.id)).length
+            {visiblePlans.map((plan) => {
+              const subjectCount = periodSubjects.filter((subject) => String(subject.planId) === String(plan.id)).length
               const isActive = selectedPlanId === String(plan.id)
 
               return (
@@ -941,6 +1033,7 @@ function Progress() {
                   </div>
                   <div className="notes-plan-card-meta">
                     <span className="pill">Matérias: {subjectCount}</span>
+                    <span className="pill info">{selectedPeriod}</span>
                   </div>
                 </button>
               )
@@ -948,6 +1041,46 @@ function Progress() {
           </div>
         </section>
       </Card>
+
+      {selectedPlan && selectedPlanCourseSummary ? (
+        <Card className="notes-course-summary-card">
+          <section className="panel-section notes-course-summary">
+            <div className="notes-course-summary-header">
+              <div>
+                <h2 className="section-title">Resumo do curso</h2>
+                <p className="settings-helper">
+                  Considera apenas matérias de períodos anteriores do plano com todas as notas preenchidas.
+                </p>
+              </div>
+              <span className="pill" style={{ borderColor: selectedPlan.color || defaultPlanColor }}>
+                {selectedPlan.name}
+              </span>
+            </div>
+
+            <div className="notes-course-summary-grid">
+              <article className="notes-course-metric-card">
+                <span className="notes-course-metric-label">Matérias cursadas</span>
+                <strong className="notes-course-metric-value">
+                  {selectedPlanCourseSummary.completedSubjectsCount}
+                </strong>
+                <span className="notes-course-metric-caption">
+                  Disciplinas concluídas em períodos anteriores
+                </span>
+              </article>
+
+              <article className="notes-course-metric-card">
+                <span className="notes-course-metric-label">GPA do curso</span>
+                <strong className="notes-course-metric-value">
+                  {formatAverageDisplay(selectedPlanCourseSummary.courseAverage, gradingStyle)}
+                </strong>
+                <span className="notes-course-metric-caption">
+                  Média global das matérias já cursadas no plano
+                </span>
+              </article>
+            </div>
+          </section>
+        </Card>
+      ) : null}
 
       {isConfigOpen ? (
         <div
@@ -1011,7 +1144,7 @@ function Progress() {
                     <p>{selectedPlan.name}</p>
                   </div>
                   <span className="pill" style={{ borderColor: selectedPlan.color || defaultPlanColor }}>
-                    {activePlanSubjects.length} matérias
+                    {activePlanSubjects.length} matérias em {selectedPeriod}
                   </span>
                 </div>
 
@@ -1066,12 +1199,12 @@ function Progress() {
               </div>
 
               <div className="notes-config-card">
-                <div className="notes-config-header">
-                  <div>
-                    <h3>Matérias do plano</h3>
-                    <p>Escolha quais matérias aparecem na tabela deste plano.</p>
+                  <div className="notes-config-header">
+                    <div>
+                      <h3>Matérias do plano</h3>
+                      <p>Escolha quais matérias deste período aparecem na tabela.</p>
+                    </div>
                   </div>
-                </div>
 
                 {activePlanSubjects.length > 0 ? (
                   <div className="notes-subject-selector">
@@ -1099,7 +1232,7 @@ function Progress() {
                   <div className="notes-config-header">
                     <div>
                       <h3>Configurações por plano</h3>
-                      <p>Selecione um card de plano para editar nota de corte, avaliações e matérias visíveis.</p>
+                      <p>Selecione um plano com matérias em {selectedPeriod} para editar nota de corte, avaliações e visibilidade.</p>
                     </div>
                   </div>
                 </div>
@@ -1126,7 +1259,7 @@ function Progress() {
               <div>
                 <h2 id="notes-hidden-plans-title" className="plan-modal-title">Planos ocultos da tabela</h2>
                 <p className="settings-helper">
-                  Esses planos não aparecem na tela principal porque nenhuma matéria está selecionada para a tabela.
+                  Esses planos do período {selectedPeriod} não aparecem na tela principal porque nenhuma matéria está selecionada para a tabela.
                 </p>
               </div>
               <button
@@ -1329,7 +1462,7 @@ function Progress() {
               </div>
             ) : (
               <div className="notes-plan-table-list">
-                {plans
+                {visiblePlans
                   .filter((plan) => (gradeRowsByPlan[String(plan.id)] || []).length > 0)
                   .map((plan) => {
                     const planKey = String(plan.id)
@@ -1457,8 +1590,8 @@ function Progress() {
           ) : (
             <p className="empty-message">
               {selectedPlan
-                ? 'Nenhuma matéria selecionada para este plano. Marque pelo menos uma matéria acima.'
-                : 'Nenhuma matéria cadastrada ainda.'}
+                ? `Nenhuma matéria selecionada para ${selectedPlan.name} no período ${selectedPeriod}.`
+                : `Nenhuma matéria cadastrada para o período ${selectedPeriod}.`}
             </p>
           )}
         </section>
