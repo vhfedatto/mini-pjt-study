@@ -79,21 +79,20 @@ function PlanManager({
         <button type="button" className="plan-current-period-button">
           Período atual: {currentAcademicPeriod}
         </button>
+        {cards.length > 0 ? (
+          <div className="plan-manager-actions">
+            <button
+              type="button"
+              className="plan-action-btn"
+              onClick={onToggleRecommendation}
+            >
+              {isRecommendationVisible
+                ? 'Ocultar 📚 Recomendação de Estudo para Hoje'
+                : 'Mostrar 📚 Recomendação de Estudo para Hoje'}
+            </button>
+          </div>
+        ) : null}
       </div>
-
-      {cards.length > 0 ? (
-        <div className="plan-card-actions" style={{ marginBottom: '12px' }}>
-          <button
-            type="button"
-            className="plan-action-btn"
-            onClick={onToggleRecommendation}
-          >
-            {isRecommendationVisible
-              ? 'Ocultar 📚 Recomendação de Estudo para Hoje'
-              : 'Mostrar 📚 Recomendação de Estudo para Hoje'}
-          </button>
-        </div>
-      ) : null}
 
       <div className="plan-cards">
         {cards.length === 0 ? (

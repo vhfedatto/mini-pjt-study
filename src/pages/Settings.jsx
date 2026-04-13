@@ -6,18 +6,23 @@ const BACKUP_STORAGE_KEYS = [
   'plans',
   'studyPlans',
   'subjects',
+  'subjects_backup',
   'tasks',
   'agendaItems',
   'importantDates',
   'flashcards',
   'question-notebooks',
+  'question-notebooks-backup',
   'rankingCompetitions',
+  'studyGrades',
+  'studyGrades_backup',
   'studydash-user',
   'studydash-password',
   'studydash-session',
   'theme',
   'question-training-resume',
-  'question-training-answer-history-reset-v1'
+  'question-training-answer-history-reset-v1',
+  'question-training-reset-direitos-humanos-v1'
 ]
 
 function readParsedStorage(key, fallback) {
@@ -81,12 +86,16 @@ function createBackupPayload() {
   const plans = readParsedStorage('plans', readParsedStorage('studyPlans', []))
   const studyPlans = readParsedStorage('studyPlans', plans)
   const subjects = readParsedStorage('subjects', [])
+  const subjectsBackup = readParsedStorage('subjects_backup', [])
   const tasks = readParsedStorage('tasks', [])
   const agendaItems = readParsedStorage('agendaItems', [])
   const importantDates = readParsedStorage('importantDates', [])
   const flashcards = readParsedStorage('flashcards', [])
   const notebooks = readParsedStorage('question-notebooks', [])
+  const notebooksBackup = readParsedStorage('question-notebooks-backup', [])
   const competitions = readParsedStorage('rankingCompetitions', [])
+  const grades = readParsedStorage('studyGrades', {})
+  const gradesBackup = readParsedStorage('studyGrades_backup', grades)
   const user = readParsedStorage('studydash-user', null)
   const password = localStorage.getItem('studydash-password')
   const session = localStorage.getItem('studydash-session')
@@ -107,12 +116,16 @@ function createBackupPayload() {
       plans,
       studyPlans,
       subjects,
+      subjectsBackup,
       tasks,
       flashcards,
       notebooks,
+      notebooksBackup,
       agendaItems,
       importantDates,
       competitions,
+      grades,
+      gradesBackup,
       progress: buildProgressSnapshot({
         plans: Array.isArray(plans) ? plans : [],
         subjects: Array.isArray(subjects) ? subjects : [],
@@ -228,6 +241,29 @@ function Settings({ onLogout }) {
           localStorage.setItem('studyPlans', syncedPlans)
         }
 
+        const syncedGrades = rawStorage.studyGrades ?? rawStorage.studyGrades_backup
+        if (typeof syncedGrades === 'string') {
+          localStorage.setItem('studyGrades', syncedGrades)
+          localStorage.setItem('studyGrades_backup', rawStorage.studyGrades_backup ?? syncedGrades)
+        }
+
+        const syncedSubjectsBackup = rawStorage.subjects_backup ?? rawStorage.subjects
+        if (typeof syncedSubjectsBackup === 'string') {
+          localStorage.setItem('subjects_backup', syncedSubjectsBackup)
+        }
+
+        const syncedNotebookBackup = rawStorage['question-notebooks-backup'] ?? rawStorage['question-notebooks']
+        if (typeof syncedNotebookBackup === 'string') {
+          localStorage.setItem('question-notebooks-backup', syncedNotebookBackup)
+        }
+
+        const direitosHumanosResetKey =
+          rawStorage['question-training-reset-direitos-humanos-v1'] ??
+          rawStorage['question-training-answer-history-reset-v1']
+        if (typeof direitosHumanosResetKey === 'string') {
+          localStorage.setItem('question-training-reset-direitos-humanos-v1', direitosHumanosResetKey)
+        }
+
         globalThis.dispatchEvent(new Event('storage'))
         globalThis.dispatchEvent(new Event('study-plans-updated'))
         globalThis.dispatchEvent(new Event('important-dates-updated'))
@@ -277,7 +313,7 @@ function Settings({ onLogout }) {
           <div className="settings-card-grid">
             <article className="settings-info-card">
               <h3>O que entra no backup</h3>
-              <p>Cadernos com questões, tentativas, estatísticas, retomada de treino, flashcards, perfil, senha local, sessão, matérias, tarefas, progresso, agenda, provas, competições e preferências.</p>
+              <p>Cadernos com questões, tentativas, estatísticas, retomada de treino, flashcards, perfil, senha local, sessão, matérias, tarefas, notas, agenda, provas, competições e preferências.</p>
             </article>
             <article className="settings-info-card">
               <h3>Como importar</h3>

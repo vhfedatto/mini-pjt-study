@@ -30,8 +30,6 @@ function SubjectList({
   const [draggedSubjectId, setDraggedSubjectId] = useState(null)
   const [dragOverSubjectId, setDragOverSubjectId] = useState(null)
   const [editingSubjectId, setEditingSubjectId] = useState(null)
-  const [editingName, setEditingName] = useState('')
-  const [editingPeriod, setEditingPeriod] = useState('')
   const [isEditMode, setIsEditMode] = useState(false)
   const inputRef = useRef(null)
 
@@ -39,7 +37,13 @@ function SubjectList({
     inputRef.current?.focus()
   }, [])
 
-  const handleAddSubject = useCallback(() => {
+  const resetSubjectForm = useCallback(() => {
+    setNewSubject('')
+    setNewSubjectPeriod('')
+    setEditingSubjectId(null)
+  }, [])
+
+  const handleSubmitSubject = useCallback(() => {
     const trimmedSubject = newSubject.trim()
     const formattedPeriod = formatSubjectPeriodInput(newSubjectPeriod)
     if (trimmedSubject === '') return
@@ -52,31 +56,46 @@ function SubjectList({
       return
     }
 
-    const exists = subjects.some(
-      (s) =>
-        s.planId === activePlanId &&
-        s.name.toLowerCase() === trimmedSubject.toLowerCase()
-    )
+    const exists = subjects.some((subject) => {
+      const isSamePlan = subject.planId === activePlanId
+      const isSameName = subject.name.toLowerCase() === trimmedSubject.toLowerCase()
+      const isDifferentSubject = editingSubjectId ? subject.id !== editingSubjectId : true
 
-    if (exists){
-      alert('Matéria já existe')
+      return isSamePlan && isSameName && isDifferentSubject
+    })
+
+    if (exists) {
+      alert(
+        editingSubjectId
+          ? 'Já existe outra matéria com esse nome neste plano.'
+          : 'Matéria já existe'
+      )
       return
-    } 
+    }
 
-    setSubjects((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: trimmedSubject,
-        period: formattedPeriod,
-        planId: activePlanId
-      }
-    ])
+    if (editingSubjectId) {
+      setSubjects((prev) =>
+        prev.map((subject) =>
+          subject.id === editingSubjectId
+            ? { ...subject, name: trimmedSubject, period: formattedPeriod }
+            : subject
+        )
+      )
+    } else {
+      setSubjects((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          name: trimmedSubject,
+          period: formattedPeriod,
+          planId: activePlanId
+        }
+      ])
+    }
 
-    setNewSubject('')
-    setNewSubjectPeriod('')
+    resetSubjectForm()
     inputRef.current?.focus()
-  }, [activePlanId, newSubject, newSubjectPeriod, setSubjects, subjects])
+  }, [activePlanId, editingSubjectId, newSubject, newSubjectPeriod, resetSubjectForm, setSubjects, subjects])
   
 
   function handleRemoveSubject(id) {
@@ -92,14 +111,13 @@ function SubjectList({
 
   function handleStartEdit(subject) {
     setEditingSubjectId(subject.id)
-    setEditingName(subject.name)
-    setEditingPeriod(subject.period || '')
+    setNewSubject(subject.name)
+    setNewSubjectPeriod(subject.period || '')
+    inputRef.current?.focus()
   }
 
   function handleCancelEdit() {
-    setEditingSubjectId(null)
-    setEditingName('')
-    setEditingPeriod('')
+    resetSubjectForm()
   }
 
   function handleToggleEditMode() {
@@ -112,44 +130,6 @@ function SubjectList({
 
       return next
     })
-  }
-
-  function handleSaveEdit(subjectId) {
-    const trimmedName = editingName.trim()
-    const formattedPeriod = formatSubjectPeriodInput(editingPeriod)
-
-    if (!trimmedName) {
-      alert('Informe o nome da matéria.')
-      return
-    }
-
-    if (!isValidSubjectPeriod(formattedPeriod)) {
-      alert('Informe o período no formato AAAA.P, usando 1 ou 2 após o ponto.')
-      return
-    }
-
-    const currentSubject = subjects.find((subject) => subject.id === subjectId)
-    const exists = subjects.some(
-      (subject) =>
-        subject.id !== subjectId &&
-        subject.planId === currentSubject?.planId &&
-        subject.name.toLowerCase() === trimmedName.toLowerCase()
-    )
-
-    if (exists) {
-      alert('Já existe outra matéria com esse nome neste plano.')
-      return
-    }
-
-    setSubjects((prev) =>
-      prev.map((subject) =>
-        subject.id === subjectId
-          ? { ...subject, name: trimmedName, period: formattedPeriod }
-          : subject
-      )
-    )
-
-    handleCancelEdit()
   }
 
   const handleDragStart = useCallback((subjectId) => {
@@ -236,7 +216,7 @@ function SubjectList({
             value={newSubject}
             onChange={(e) => setNewSubject(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddSubject()
+              if (e.key === 'Enter') handleSubmitSubject()
             }}
           />
           <input
@@ -247,13 +227,22 @@ function SubjectList({
             value={newSubjectPeriod}
             onChange={(e) => setNewSubjectPeriod(formatSubjectPeriodInput(e.target.value))}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddSubject()
+              if (e.key === 'Enter') handleSubmitSubject()
             }}
           />
 
-          <button className="subject-add-button" onClick={handleAddSubject}>
-            Adicionar
+          <button className="subject-add-button" onClick={handleSubmitSubject}>
+            {editingSubjectId ? 'Atualizar' : 'Adicionar'}
           </button>
+          {editingSubjectId ? (
+            <button
+              type="button"
+              className="subject-edit-button subject-edit-button-secondary"
+              onClick={handleCancelEdit}
+            >
+              Cancelar
+            </button>
+          ) : null}
         </div>
 
         {isLoadingSubjects ? (
@@ -277,10 +266,11 @@ function SubjectList({
               const isDropTarget =
                 dragOverSubjectId === subject.id && draggedSubjectId !== subject.id
               const isLongSubjectName = subject.name.trim().length > 22
+              const isSelectedForEdit = editingSubjectId === subject.id
 
               return (
                 <li
-                  className={`subject-item ${activePlanId && !isEditMode ? 'subject-item-draggable' : ''} ${isEditMode && editingSubjectId !== subject.id ? 'subject-item-editable' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
+                  className={`subject-item ${activePlanId && !isEditMode ? 'subject-item-draggable' : ''} ${isEditMode ? 'subject-item-editable' : ''} ${isSelectedForEdit ? 'is-edit-selected' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
                   key={subject.id}
                   draggable={Boolean(activePlanId && !isEditMode)}
                   onDragStart={() => handleDragStart(subject.id)}
@@ -288,91 +278,45 @@ function SubjectList({
                   onDrop={(event) => handleDrop(event, subject.id)}
                   onDragEnd={handleDragEnd}
                   onClick={() => {
-                    if (isEditMode && editingSubjectId !== subject.id) {
+                    if (isEditMode) {
                       handleStartEdit(subject)
                     }
                   }}
                 >
-                  {editingSubjectId === subject.id ? (
-                    <>
-                      <div className="subject-item-main subject-item-main-editing">
-                        <div className="subject-edit-fields">
-                          <input
-                            className="subject-input"
-                            type="text"
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            placeholder="Nome da matéria"
-                            onClick={(event) => event.stopPropagation()}
-                          />
-                          <input
-                            className="subject-input subject-period-input"
-                            type="text"
-                            inputMode="numeric"
-                            value={editingPeriod}
-                            placeholder="2025.1"
-                            onChange={(e) => setEditingPeriod(formatSubjectPeriodInput(e.target.value))}
-                            onClick={(event) => event.stopPropagation()}
-                          />
-                        </div>
+                  <>
+                    <div className="subject-item-main">
+                      <div className="subject-name-row">
+                        <span
+                          className="plan-color-dot"
+                          style={{ '--plan-color': plan?.color || '#c46b2d' }}
+                          aria-hidden="true"
+                        />
+                        <span
+                          className={`subject-name${isLongSubjectName ? ' subject-name--long' : ''}`}
+                          title={subject.name}
+                        >
+                          {subject.name}
+                        </span>
+                      </div>
+                      <div className="subject-meta-row">
+                        <span className="subject-period-badge">
+                          {subject.period || 'Período não definido'}
+                        </span>
                         <p className="task-subject-label">
                           {completedTasksForSubject}/{totalTasksForSubject} tarefas concluídas
                         </p>
                       </div>
+                    </div>
 
-                      <div className="subject-actions-column" onClick={(event) => event.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="subject-edit-button"
-                          onClick={() => handleSaveEdit(subject.id)}
-                        >
-                          Salvar
-                        </button>
-                        <button
-                          type="button"
-                          className="subject-edit-button subject-edit-button-secondary"
-                          onClick={handleCancelEdit}
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="subject-item-main">
-                        <div className="subject-name-row">
-                          <span
-                            className="plan-color-dot"
-                            style={{ '--plan-color': plan?.color || '#c46b2d' }}
-                            aria-hidden="true"
-                          />
-                          <span
-                            className={`subject-name${isLongSubjectName ? ' subject-name--long' : ''}`}
-                            title={subject.name}
-                          >
-                            {subject.name}
-                          </span>
-                        </div>
-                        <div className="subject-meta-row">
-                          <span className="subject-period-badge">
-                            {subject.period || 'Período não definido'}
-                          </span>
-                          <p className="task-subject-label">
-                            {completedTasksForSubject}/{totalTasksForSubject} tarefas concluídas
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="subject-actions-column" onClick={(event) => event.stopPropagation()}>
-                        <button
-                          className="subject-remove-button"
-                          onClick={() => handleRemoveSubject(subject.id)}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </>
-                  )}
+                    <div className="subject-actions-column" onClick={(event) => event.stopPropagation()}>
+                      <button
+                        className="subject-remove-button"
+                        onClick={() => handleRemoveSubject(subject.id)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </>
                 </li>
               )
             })}
