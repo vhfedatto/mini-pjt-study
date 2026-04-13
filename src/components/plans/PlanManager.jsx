@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react'
 import Card from '../ui/Card'
 
+function getCurrentAcademicPeriod() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const period = month < 6 ? 1 : 2
+
+  return `${year}.${period}`
+}
+
 function PlanManager({
   plans,
   selectedPlanId,
@@ -17,6 +26,7 @@ function PlanManager({
   const [editDescription, setEditDescription] = useState('')
   const [editGoal, setEditGoal] = useState('')
   const [editColor, setEditColor] = useState('#c46b2d')
+  const currentAcademicPeriod = useMemo(() => getCurrentAcademicPeriod(), [])
 
   const cards = useMemo(() => {
     const countFor = (planId) => ({
@@ -65,6 +75,12 @@ function PlanManager({
 
   return (
     <Card className="plan-manager-card">
+      <div className="plan-manager-toolbar">
+        <button type="button" className="plan-current-period-button">
+          Período atual: {currentAcademicPeriod}
+        </button>
+      </div>
+
       {cards.length > 0 ? (
         <div className="plan-card-actions" style={{ marginBottom: '12px' }}>
           <button

@@ -1203,7 +1203,7 @@ function Progress() {
             <div>
               <h2 className="section-title">Tabela de notas</h2>
               <p className="settings-helper">
-                Os cards de prova aparecem automaticamente quando o campo Avaliação da aba Provas bate com o nome da coluna.
+                Os cards de prova aparecem automaticamente. Remova marcando a prova como feita.
               </p>
             </div>
           </div>
