@@ -139,10 +139,16 @@ function parseNumber(value) {
 function formatScoreInput(value) {
   const digits = String(value || '').replace(/\D/g, '').slice(0, 4)
   if (!digits) return ''
-  if (digits.length === 1) return digits
-  if (digits.length === 2) return `${digits[0]},${digits[1]}`
-  if (digits.length === 3) return `${digits.slice(0, 2)},${digits[2]}`
-  return `${digits.slice(0, 2)},${digits.slice(2)}`
+  let formatted = ''
+
+  if (digits.length === 1) formatted = digits
+  else if (digits.length === 2) formatted = `${digits[0]},${digits[1]}`
+  else if (digits.length === 3) formatted = `${digits.slice(0, 2)},${digits[2]}`
+  else formatted = `${digits.slice(0, 2)},${digits.slice(2)}`
+
+  const parsed = parseNumber(formatted)
+  if (parsed !== null && parsed > 10) return '10'
+  return formatted
 }
 
 function formatLetterInput(value) {
@@ -482,15 +488,18 @@ function Progress() {
         ?? 0
 
       const subjectEvaluations = planConfig.evaluations
-      const scoresForAverage = subjectEvaluations
-        .map((evaluation) => parseGradeValue(subjectEntry.scores?.[evaluation.id], gradingStyle))
-        .filter((value) => value !== null)
-
-      const average = scoresForAverage.length > 0
-        ? scoresForAverage.reduce((sum, value) => sum + value, 0) / scoresForAverage.length
-        : null
-
-      const missingToPass = average === null ? passingScore : Math.max(passingScore - average, 0)
+      const parsedScores = subjectEvaluations.map((evaluation) =>
+        parseGradeValue(subjectEntry.scores?.[evaluation.id], gradingStyle)
+      )
+      const filledScores = parsedScores.filter((value) => value !== null)
+      const totalEvaluations = subjectEvaluations.length
+      const totalScore = filledScores.reduce((sum, value) => sum + value, 0)
+      const remainingEvaluations = totalEvaluations - filledScores.length
+      const average = totalEvaluations > 0 ? totalScore / totalEvaluations : null
+      const totalNeededToPass = Math.max((passingScore * totalEvaluations) - totalScore, 0)
+      const missingToPass = remainingEvaluations > 0
+        ? totalNeededToPass / remainingEvaluations
+        : totalNeededToPass
 
       return {
         subject,
@@ -498,7 +507,9 @@ function Progress() {
         planConfig,
         subjectEntry,
         average,
-        missingToPass
+        missingToPass,
+        filledScoresCount: filledScores.length,
+        remainingEvaluations
       }
     })
   }, [allPlanConfigs, gradebook.entries, plans, visibleSubjects])
@@ -548,7 +559,7 @@ function Progress() {
     }
   }, [expandedHiddenPlanId, hiddenPlans, isHiddenPlansOpen])
 
-  const subjectsWithAverage = gradeRows.filter((row) => row.average !== null).length
+  const subjectsWithAverage = gradeRows.filter((row) => row.filledScoresCount > 0).length
   const passingRows = gradeRows.filter(
     (row) =>
       row.average !== null &&
@@ -1258,7 +1269,7 @@ function Progress() {
                           ] || []
 
                           return (
-                            <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
+                            <div className={`notes-score-cell${isScoreConfirmed ? ' is-confirmed' : ''}`} key={`${row.subject.id}-${evaluation.id}`}>
                               {evaluationForSubject ? (
                                 <>
                                   <div className="notes-score-input-wrap">
@@ -1387,7 +1398,7 @@ function Progress() {
                                   ] || []
 
                                   return (
-                                    <div className="notes-score-cell" key={`${row.subject.id}-${evaluation.id}`}>
+                                    <div className={`notes-score-cell${isScoreConfirmed ? ' is-confirmed' : ''}`} key={`${row.subject.id}-${evaluation.id}`}>
                                       <div className="notes-score-input-wrap">
                                         <input
                                           className={`subject-input notes-score-input${isScoreConfirmed ? ' is-confirmed' : ''}`}
