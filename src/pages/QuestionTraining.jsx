@@ -91,6 +91,24 @@ function XIcon() {
   )
 }
 
+function FlagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M6.5 3.5v17"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8 4.75h8.2c1 0 1.56 1.15.94 1.94l-1.08 1.39a1.6 1.6 0 0 0 0 1.97l1.08 1.39c.62.79.06 1.94-.94 1.94H8V4.75Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 function readNotebooks() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(KEY) || '[]')
@@ -195,7 +213,8 @@ function createEmptyQuestionSession() {
     cutAlternatives: [],
     submitted: false,
     isCorrect: false,
-    difficulty: null
+    difficulty: null,
+    flagged: false
   }
 }
 
@@ -527,6 +546,15 @@ function QuestionTraining({ notebookId, onExit }) {
     }))
   }
 
+  function handleToggleFlag() {
+    if (!currentQuestion || submitted) return
+
+    updateQuestionSession(currentQuestion.id, (previous) => ({
+      ...previous,
+      flagged: !previous.flagged
+    }))
+  }
+
   function handleSubmit() {
     if (!currentQuestion || !selectedAlternative || submitted) return
 
@@ -655,6 +683,7 @@ function QuestionTraining({ notebookId, onExit }) {
             <div className="question-training-index-list" aria-label={`Navegacao das questoes do caderno ${notebook.name}`}>
               {questions.map((question, index) => {
                 const questionSession = sessionState[question.id]
+                const isFlaggedPending = Boolean(questionSession?.flagged) && !questionSession?.submitted
                 const statusClass = `${questionSession?.submitted
                   ? questionSession.isCorrect ? ' is-correct' : ' is-wrong'
                   : ' is-pending'}${index === currentIndex ? ' is-current' : ''}`
@@ -672,6 +701,11 @@ function QuestionTraining({ notebookId, onExit }) {
                       else delete questionChipRefs.current[question.id]
                     }}
                   >
+                    {isFlaggedPending ? (
+                      <span className="question-training-index-flag" aria-hidden="true">
+                        <FlagIcon />
+                      </span>
+                    ) : null}
                     {index + 1}
                   </button>
                 )
@@ -787,9 +821,22 @@ function QuestionTraining({ notebookId, onExit }) {
                 <span className="question-training-pill">{currentQuestion.bank}</span>
                 <span className="question-training-pill">{currentQuestion.year}</span>
               </div>
-              <span className="question-training-progress">
-                Questão {currentIndex + 1} de {questions.length}
-              </span>
+              <div className="question-training-progress-group">
+                <button
+                  type="button"
+                  className={`question-training-flag-toggle${currentSession?.flagged && !submitted ? ' is-active' : ''}`}
+                  onClick={handleToggleFlag}
+                  aria-pressed={Boolean(currentSession?.flagged && !submitted)}
+                  aria-label={currentSession?.flagged && !submitted ? 'Remover sinalização da questão' : 'Sinalizar questão'}
+                  title={currentSession?.flagged && !submitted ? 'Remover sinalização da questão' : 'Sinalizar questão'}
+                  disabled={submitted}
+                >
+                  <FlagIcon />
+                </button>
+                <span className="question-training-progress">
+                  Questão {currentIndex + 1} de {questions.length}
+                </span>
+              </div>
             </header>
 
             <div className={`question-training-content${isPresentationMode ? ' is-presentation' : ''}`}>
