@@ -15,14 +15,13 @@ const DIFFICULTIES = [
 ]
 
 const QUESTION_FLAG_COLORS = [
-  { id: 'red', value: '#c2362b', label: 'Vermelha' },
-  { id: 'orange', value: '#d57a1f', label: 'Laranja' },
-  { id: 'gold', value: '#c79a16', label: 'Dourada' },
-  { id: 'green', value: '#2f8f55', label: 'Verde' },
-  { id: 'blue', value: '#2f6ecf', label: 'Azul' },
-  { id: 'purple', value: '#7a4bc4', label: 'Roxa' }
+  '#c2362b',
+  '#d57a1f',
+  '#c79a16',
+  '#2f8f55',
+  '#2f6ecf'
 ]
-const DEFAULT_FLAG_COLOR = QUESTION_FLAG_COLORS[0].value
+const DEFAULT_FLAG_COLOR = QUESTION_FLAG_COLORS[0]
 
 function ArrowLeftIcon() {
   return (
@@ -378,7 +377,7 @@ function QuestionTraining({ notebookId, onExit }) {
   const [supportTextScale, setSupportTextScale] = useState(1)
   const [notesDraft, setNotesDraft] = useState('')
   const [isExitPromptOpen, setIsExitPromptOpen] = useState(false)
-  const [isFlagPanelOpen, setIsFlagPanelOpen] = useState(false)
+  const [isFlagPaletteSuppressed, setIsFlagPaletteSuppressed] = useState(false)
 
   useEffect(() => {
     resetDireitosHumanosProgressOnce()
@@ -404,7 +403,7 @@ function QuestionTraining({ notebookId, onExit }) {
     setIsSupportTextScaleOpen(false)
     setSupportTextScale(1)
     setIsExitPromptOpen(false)
-    setIsFlagPanelOpen(false)
+    setIsFlagPaletteSuppressed(false)
     setSessionAnswerHistory({})
   }, [notebookId])
 
@@ -506,10 +505,7 @@ function QuestionTraining({ notebookId, onExit }) {
   useEffect(() => {
     setNotesDraft(currentQuestion?.notes ?? '')
     setIsNotesOpen(false)
-  }, [currentQuestion?.id])
-
-  useEffect(() => {
-    setIsFlagPanelOpen(false)
+    setIsFlagPaletteSuppressed(false)
   }, [currentQuestion?.id])
 
   useEffect(() => {
@@ -568,13 +564,9 @@ function QuestionTraining({ notebookId, onExit }) {
 
     updateQuestionSession(currentQuestion.id, (previous) => ({
       ...previous,
-      flagged: !previous.flagged
+      flagged: !previous.flagged,
+      flagColor: previous.flagColor || DEFAULT_FLAG_COLOR
     }))
-
-    setIsFlagPanelOpen((previous) => {
-      if (currentSession?.flagged) return false
-      return true
-    })
   }
 
   function handleFlagColorChange(color) {
@@ -584,6 +576,10 @@ function QuestionTraining({ notebookId, onExit }) {
       ...previous,
       flagColor: color
     }))
+    setIsFlagPaletteSuppressed(true)
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
   }
 
   function handleSubmit() {
@@ -727,7 +723,6 @@ function QuestionTraining({ notebookId, onExit }) {
                     onClick={() => handleGoToQuestion(index)}
                     aria-label={`Ir para a questao ${index + 1}`}
                     disabled={requiresDifficulty && index !== currentIndex}
-                    data-flag-label={isFlaggedPending ? 'Questão sinalizada' : undefined}
                     ref={(element) => {
                       if (element) questionChipRefs.current[question.id] = element
                       else delete questionChipRefs.current[question.id]
@@ -858,7 +853,15 @@ function QuestionTraining({ notebookId, onExit }) {
                 <span className="question-training-pill">{currentQuestion.year}</span>
               </div>
               <div className="question-training-progress-group">
-                <div className={`question-training-flag-panel-shell${isFlagPanelOpen && currentSession?.flagged && !submitted ? ' is-open' : ''}`}>
+                <div
+                  className={`question-training-flag-menu${currentSession?.flagged && !submitted ? ' is-active' : ''}${isFlagPaletteSuppressed ? ' is-suppressed' : ''}`}
+                  onMouseLeave={(event) => {
+                    setIsFlagPaletteSuppressed(false)
+                    if (event.currentTarget.contains(document.activeElement)) {
+                      document.activeElement.blur()
+                    }
+                  }}
+                >
                   <button
                     type="button"
                     className={`question-training-flag-toggle${currentSession?.flagged && !submitted ? ' is-active' : ''}`}
@@ -867,29 +870,24 @@ function QuestionTraining({ notebookId, onExit }) {
                     aria-label={currentSession?.flagged && !submitted ? 'Remover sinalização da questão' : 'Sinalizar questão'}
                     title={currentSession?.flagged && !submitted ? 'Remover sinalização da questão' : 'Sinalizar questão'}
                     disabled={submitted}
-                    style={{
-                      '--question-flag-active-color':
-                        currentSession?.flagColor || DEFAULT_FLAG_COLOR
-                    }}
+                    style={{ '--question-flag-active-color': currentSession?.flagColor || DEFAULT_FLAG_COLOR }}
                   >
                     <FlagIcon />
                   </button>
-                  <div className="question-training-flag-panel">
-                    <div className="question-training-flag-colors" aria-label="Escolha uma cor para a tag">
-                      {QUESTION_FLAG_COLORS.map((colorOption) => (
+                  {currentSession?.flagged && !submitted ? (
+                    <div className="question-training-flag-petal-list" aria-label="Escolha uma cor para a bandeira">
+                      {QUESTION_FLAG_COLORS.map((color, index) => (
                         <button
-                          key={colorOption.id}
+                          key={color}
                           type="button"
-                          className={`question-training-flag-color${(currentSession?.flagColor || DEFAULT_FLAG_COLOR) === colorOption.value ? ' is-selected' : ''}`}
-                          style={{ '--question-flag-color': colorOption.value }}
-                          onClick={() => handleFlagColorChange(colorOption.value)}
-                          aria-label={`Usar cor ${colorOption.label}`}
-                          title={colorOption.label}
-                          disabled={submitted}
+                          className={`question-training-flag-petal${(currentSession?.flagColor || DEFAULT_FLAG_COLOR) === color ? ' is-selected' : ''}`}
+                          style={{ '--question-flag-color': color, '--petal-index': index }}
+                          onClick={() => handleFlagColorChange(color)}
+                          aria-label={`Usar cor ${index + 1}`}
                         />
                       ))}
                     </div>
-                  </div>
+                  ) : null}
                 </div>
                 <span className="question-training-progress">
                   Questão {currentIndex + 1} de {questions.length}
