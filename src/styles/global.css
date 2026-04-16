@@ -1549,6 +1549,12 @@ body.modal-scroll-locked .dashboard-content {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.94rem;
+  line-height: 1.45;
+  min-height: calc(1.45em * 2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .plan-card-meta {
@@ -1566,6 +1572,7 @@ body.modal-scroll-locked .dashboard-content {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  margin-top: auto;
 }
 
 .plan-action-btn {
