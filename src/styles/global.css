@@ -1485,7 +1485,8 @@ body.modal-scroll-locked .dashboard-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
 }
 
 .plan-card {
@@ -1497,6 +1498,7 @@ body.modal-scroll-locked .dashboard-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
   cursor: pointer;
   will-change: transform;
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1),

@@ -16,6 +16,23 @@ function isValidSubjectPeriod(value) {
   return /^\d{4}\.[12]$/.test(value)
 }
 
+function insertSubjectNearPlanGroup(subjects, nextSubject) {
+  const lastSamePlanIndex = [...subjects].reverse().findIndex(
+    (subject) => subject.planId === nextSubject.planId
+  )
+
+  if (lastSamePlanIndex === -1) {
+    return [...subjects, nextSubject]
+  }
+
+  const insertAt = subjects.length - lastSamePlanIndex
+  return [
+    ...subjects.slice(0, insertAt),
+    nextSubject,
+    ...subjects.slice(insertAt)
+  ]
+}
+
 function SubjectList({
   subjects,
   visibleSubjects = subjects,
@@ -82,15 +99,14 @@ function SubjectList({
         )
       )
     } else {
-      setSubjects((prev) => [
-        ...prev,
-        {
+      setSubjects((prev) =>
+        insertSubjectNearPlanGroup(prev, {
           id: Date.now(),
           name: trimmedSubject,
           period: formattedPeriod,
           planId: activePlanId
-        }
-      ])
+        })
+      )
     }
 
     resetSubjectForm()
