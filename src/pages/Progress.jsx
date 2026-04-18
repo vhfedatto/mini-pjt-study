@@ -387,15 +387,6 @@ function Progress() {
     return periodSubjects.filter((subject) => String(subject.planId) === selectedPlanId)
   }, [periodSubjects, selectedPlanId])
 
-  useEffect(() => {
-    if (!selectedPlanId) return
-
-    const hasPlan = visiblePlans.some((plan) => String(plan.id) === selectedPlanId)
-    if (!hasPlan) {
-      setSelectedPlanId('')
-    }
-  }, [selectedPlanId, visiblePlans])
-
   const activePlanConfig = useMemo(() => {
     if (!selectedPlanId) return null
 
@@ -429,6 +420,38 @@ function Progress() {
 
     return configs
   }, [gradebook.plans, plans, subjects])
+
+  const periodPlanVisibility = useMemo(() => {
+    return visiblePlans.map((plan) => {
+      const planKey = String(plan.id)
+      const planSubjects = periodSubjects.filter((subject) => String(subject.planId) === planKey)
+      const planConfig =
+        allPlanConfigs[planKey] || createPlanGradeConfig(planSubjects.map((subject) => String(subject.id)))
+      const selectedPlanSubjects = planSubjects.filter((subject) =>
+        planConfig.selectedSubjectIds.includes(String(subject.id))
+      )
+
+      return {
+        plan,
+        planSubjects,
+        selectedPlanSubjects
+      }
+    })
+  }, [allPlanConfigs, periodSubjects, visiblePlans])
+
+  const visiblePlansInNotes = useMemo(
+    () => periodPlanVisibility.filter(({ selectedPlanSubjects }) => selectedPlanSubjects.length > 0),
+    [periodPlanVisibility]
+  )
+
+  useEffect(() => {
+    if (!selectedPlanId) return
+
+    const hasPlan = visiblePlansInNotes.some(({ plan }) => String(plan.id) === selectedPlanId)
+    if (!hasPlan) {
+      setSelectedPlanId('')
+    }
+  }, [selectedPlanId, visiblePlansInNotes])
 
   const getOrderedSubjectIds = (planKey) => {
     const planSubjects = subjects
@@ -604,24 +627,9 @@ function Progress() {
   }, [gradeRows])
 
   const hiddenPlans = useMemo(() => {
-    return visiblePlans
-      .map((plan) => {
-        const planKey = String(plan.id)
-        const planSubjects = periodSubjects.filter((subject) => String(subject.planId) === planKey)
-        const planConfig =
-          allPlanConfigs[planKey] || createPlanGradeConfig(planSubjects.map((subject) => String(subject.id)))
-        const selectedPlanSubjects = planSubjects.filter((subject) =>
-          planConfig.selectedSubjectIds.includes(String(subject.id))
-        )
-
-        return {
-          plan,
-          planSubjects,
-          selectedPlanSubjects
-        }
-      })
+    return periodPlanVisibility
       .filter(({ planSubjects, selectedPlanSubjects }) => planSubjects.length > 0 && selectedPlanSubjects.length === 0)
-  }, [allPlanConfigs, periodSubjects, visiblePlans])
+  }, [periodPlanVisibility])
 
   useEffect(() => {
     if (!isHiddenPlansOpen) return
@@ -1010,8 +1018,8 @@ function Progress() {
           </div>
 
           <div className="notes-plan-cards">
-            {visiblePlans.map((plan) => {
-              const subjectCount = periodSubjects.filter((subject) => String(subject.planId) === String(plan.id)).length
+            {visiblePlansInNotes.map(({ plan, selectedPlanSubjects }) => {
+              const subjectCount = selectedPlanSubjects.length
               const isActive = selectedPlanId === String(plan.id)
 
               return (
@@ -1462,7 +1470,8 @@ function Progress() {
               </div>
             ) : (
               <div className="notes-plan-table-list">
-                {visiblePlans
+                {visiblePlansInNotes
+                  .map(({ plan }) => plan)
                   .filter((plan) => (gradeRowsByPlan[String(plan.id)] || []).length > 0)
                   .map((plan) => {
                     const planKey = String(plan.id)
