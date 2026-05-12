@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react'
 import Footer from '../components/layout/Footer'
 import Flashcards from './Flashcards'
 import QuestionNotebooks from '../components/study/QuestionNotebooks'
+import SubjectNotebooks from '../components/study/SubjectNotebooks'
 
 const TRAINING_OPTIONS = [
   {
     key: 'notebooks',
-    title: 'Estante de Cadernos'
+    title: 'Caderno de Questões'
+  },
+  {
+    key: 'subjects',
+    title: 'Caderno de Matérias'
   },
   {
     key: 'flashcards',
@@ -40,12 +45,14 @@ function Treinos({ onStartQuestionTraining, resumeNotebookId }) {
         </div>
       </section>
 
-      {activeMode === 'notebooks' ? (
+      {activeMode === 'notebooks' && (
         <QuestionNotebooks
           onStartTraining={onStartQuestionTraining}
           initialSelectedId={resumeNotebookId}
         />
-      ) : <Flashcards embedded />}
+      )}
+      {activeMode === 'subjects' && <SubjectNotebooks />}
+      {activeMode === 'flashcards' && <Flashcards embedded />}
 
       <Footer />
     </section>
