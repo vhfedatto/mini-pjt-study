@@ -48,14 +48,6 @@ function Header() {
         <div className="header-actions">
           <button
             type="button"
-            className="header-button header-button-secondary"
-            onClick={toggleTheme}
-            aria-label="Alternar modo claro e escuro"
-          >
-            {theme === 'light' ? 'Modo escuro' : 'Modo claro'}
-          </button>
-          <button
-            type="button"
             className="header-button"
             onClick={() => setIsPlanModalOpen(true)}
           >

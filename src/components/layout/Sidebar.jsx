@@ -179,7 +179,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
     { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
     { key: 'agenda', label: 'Agenda', icon: <CalendarIcon /> },
     { key: 'courses', label: 'Matérias', icon: <CoursesIcon /> },
-    { key: 'flashcards', label: 'Cadernos', icon: <NotebookIcon /> },
+    { key: 'cadernos', label: 'Cadernos', icon: <NotebookIcon /> },
     { key: 'important-dates', label: 'Provas', icon: <ExamIcon /> },
     { key: 'progress', label: 'Notas', icon: <NotesIcon /> },
     { key: 'study-progress', label: 'Progresso', icon: <ProgressIcon /> },
@@ -230,6 +230,12 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
             className={`sidebar-settings-button sidebar-profile-button${activePage === 'profile' ? ' sidebar-link-active' : ''}`}
             onClick={() => setActivePage?.('profile')}
           >
+            <span className="sidebar-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="8" r="3.25" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5.5 20c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
             <span>Perfil</span>
           </button>
 
@@ -249,7 +255,7 @@ function Sidebar({ activePage = 'dashboard', setActivePage, isOpen = true, onTog
           className={`sidebar-settings-button${activePage === 'settings' ? ' sidebar-link-active' : ''}`}
           onClick={() => setActivePage?.('settings')}
         >
-          <GearIcon />
+          <span className="sidebar-nav-icon" aria-hidden="true"><GearIcon /></span>
           <span>Configurações</span>
         </button>
       </div>

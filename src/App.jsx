@@ -4,7 +4,7 @@ import Agenda from './pages/Agenda'
 import Progress from './pages/Progress'
 import ImportantDates from './pages/ImportantDates'
 import StudyProgress from './pages/StudyProgress'
-import Treinos from './pages/Treinos'
+import Cadernos from './pages/Cadernos'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 import Ranking from './pages/Ranking'
@@ -60,7 +60,7 @@ function App() {
     if (pageKey !== 'question-training') {
       setQuestionTrainingNotebookId(null)
     }
-    if (pageKey !== 'flashcards') {
+    if (pageKey !== 'cadernos') {
       setResumeNotebookId(null)
     }
     if (typeof window !== 'undefined' && window.innerWidth <= SIDEBAR_BREAKPOINT) {
@@ -82,7 +82,7 @@ function App() {
 
   function handleExitQuestionTraining() {
     setQuestionTrainingNotebookId(null)
-    setActivePage('flashcards')
+    setActivePage('cadernos')
   }
 
   const isQuestionTraining = activePage === 'question-training'
@@ -127,8 +127,8 @@ function App() {
 
       {activePage === 'dashboard' && <Dashboard />}
       {activePage === 'agenda' && <Agenda />}
-      {activePage === 'flashcards' && (
-        <Treinos
+      {activePage === 'cadernos' && (
+        <Cadernos
           onStartQuestionTraining={handleStartQuestionTraining}
           resumeNotebookId={resumeNotebookId}
         />
@@ -143,7 +143,7 @@ function App() {
       {activePage === 'important-dates' && <ImportantDates />}
       {activePage === 'profile' && <Profile />}
       {activePage === 'settings' && <Settings onLogout={handleLogout} />}
-      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'study-progress' && activePage !== 'ranking' && activePage !== 'flashcards' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && activePage !== 'courses' && (
+      {activePage !== 'dashboard' && activePage !== 'agenda' && activePage !== 'progress' && activePage !== 'study-progress' && activePage !== 'ranking' && activePage !== 'cadernos' && activePage !== 'question-training' && activePage !== 'important-dates' && activePage !== 'profile' && activePage !== 'settings' && activePage !== 'courses' && (
         <section className="dashboard-content" style={{ padding: '24px' }}>
           <h2>Selecione uma opção no menu lateral</h2>
         </section>

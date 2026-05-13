@@ -287,7 +287,11 @@ function Ranking() {
               className={`ranking-mode-button ranking-mode-button-general${rankingMode === 'general' ? ' is-active' : ''}`}
               onClick={() => setRankingMode('general')}
             >
-              📊 Ranking geral: {sortedRanking.length}
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 19.25h10M8.75 19.25v-5.5M12 19.25v-9M15.25 19.25v-3.5" />
+                <path d="M8.75 7.75 12 4.75l3.25 3" />
+              </svg>
+              Ranking geral: {sortedRanking.length}
             </button>
             <button
               type="button"
@@ -296,7 +300,10 @@ function Ranking() {
               className={`ranking-mode-button ranking-mode-button-competition${rankingMode === 'competition' ? ' is-active' : ''}`}
               onClick={() => setRankingMode('competition')}
             >
-              🏁 Competição: {selectedCompetitionRanking.length}
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3.75L8.5 8.5H4l3.5 3.25L6 17l6-3.5L18 17l-1.5-5.25L20 8.5h-4.5Z" />
+              </svg>
+              Competição: {selectedCompetitionRanking.length}
             </button>
           </div>
 
